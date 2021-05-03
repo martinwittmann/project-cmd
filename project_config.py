@@ -1,14 +1,19 @@
 import click
 import os
 import pathlib
+import yaml
 
-CONFIG_FILENAME = '.project'
+CONFIG_FILENAME = 'project.yml'
 
 class ProjectConfig:
     def __init__(self, verbose=0):
         self.path = os.getcwd()
         self.verbose = verbose
         self.home_dir = str(pathlib.Path.home())
+        self.project_dir = self.get_config_location()
+        self.config_file = os.path.join(self.project_dir, CONFIG_FILENAME)
+        with open(self.config_file) as file:
+            self._config = yaml.load(file, yaml.FullLoader)
 
     def get_config_location(self):
         config_filename = False
@@ -21,17 +26,15 @@ class ProjectConfig:
             if self.verbose > 1:
                 click.echo('Searching project config at {}'.format(filename))
             if os.path.isfile(filename):
-                config_filename = filename
-                break
+                if self.verbose > 0:
+                    click.echo('Found project config at {}'.format(config_filename))
+                return current_path
             else:
                 current_path = str(pathlib.Path(current_path).resolve().parent)
                 if self.is_root(current_path) or self.is_home_dir(current_path):
                     raise Exception('No configuration file found. Stopped at {}.'
                                     .format(current_path))
 
-        if self.verbose > 0:
-            click.echo('Found project config at {}'.format(config_filename))
-        return config_filename
 
 
     def is_home_dir(self, path):
@@ -39,3 +42,15 @@ class ProjectConfig:
 
     def is_root(self, path):
         return os.path.dirname(path) == path
+
+    def get(self, key=''):
+        if key == '':
+            return self._config
+
+        parts = key.split('.')
+        if len(parts) == 1:
+            return self._config[key]
+        else:
+            parent_key = '.'.join(parts[:-1])
+            parent = self.get(parent_key)
+            return parent[parts[1]]

@@ -1,4 +1,5 @@
 import click
+import subprocess
 from project_config import ProjectConfig
 
 @click.group()
@@ -9,17 +10,23 @@ from project_config import ProjectConfig
 @click.pass_context
 def main(context, verbose, vverbose):
     """A standardized way to manage project files and database dumps."""
-    context.verbosity = 0
+    if context.obj is None:
+        context.obj = dict()
+    context.obj['verbosity'] = 0
     if verbose:
-        context.verbosity = 1
+        context.obj['verbosity'] = 1
     if vverbose:
-        context.verbosity = 2
-    context._config = ProjectConfig(context.verbosity)
-    context.config = context._config.get_config_location()
-
+        context.obj['verbosity'] = 2
+    context.obj['config'] = ProjectConfig(context.obj['verbosity'])
+    context.obj['project_dir'] = context.obj['config'].project_dir
 
 @main.command()
+@click.argument('script')
 @click.pass_context
-def run(context):
+def run(context, script):
     """Execute a script defined in .project."""
-    click.echo('Running...')
+    if context.obj['verbosity'] > 0:
+        click.echo('Running script {}')
+    command = context.obj['config'].get('scripts.{}'.format(script))
+    subprocess.run(command.split(' '))
+

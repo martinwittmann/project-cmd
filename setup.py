@@ -6,6 +6,7 @@ setup(
     py_modules=['project_cmd'],
     install_requires=[
         'Click',
+        'PyYAML',
     ],
     entry_points='''
         [console_scripts]
