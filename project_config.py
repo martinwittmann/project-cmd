@@ -2,8 +2,11 @@ import click
 import os
 import pathlib
 import yaml
+from dotenv import dotenv_values
 
 CONFIG_FILENAME = 'project.yml'
+ENV_FILENAME = '.env'
+DOT_PROJECT_DIR = '.project'
 
 class ProjectConfig:
     def __init__(self, verbose=0):
@@ -11,9 +14,11 @@ class ProjectConfig:
         self.verbose = verbose
         self.home_dir = str(pathlib.Path.home())
         self.project_dir = self.get_config_location()
+        self.dot_project_dir = os.path.join(self.project_dir, DOT_PROJECT_DIR)
         self.config_file = os.path.join(self.project_dir, CONFIG_FILENAME)
         with open(self.config_file) as file:
             self._config = yaml.load(file, yaml.FullLoader)
+        self.env = dotenv_values(os.path.join(self.project_dir, ENV_FILENAME))
 
     def get_config_location(self):
         config_filename = False

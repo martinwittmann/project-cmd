@@ -7,6 +7,7 @@ setup(
     install_requires=[
         'Click',
         'PyYAML',
+        'python-dotenv',
     ],
     entry_points='''
         [console_scripts]
