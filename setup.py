@@ -9,6 +9,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        project_cmd=project_cmd:main
+        project=project_cmd:main
     ''',
 )
