@@ -1,7 +1,13 @@
+import sys
+
 import click
 import subprocess
 from project_config import ProjectConfig
 from database import Database
+from project_util import project_cmd_show_click_exception, debug
+
+# Monkey patching click.ClickException to better format error messages.
+click.ClickException.show = project_cmd_show_click_exception
 
 VERSION = '0.1'
 
@@ -22,6 +28,7 @@ def main(context, verbose, vverbose, version):
         context.obj['verbosity'] = 1
     if vverbose:
         context.obj['verbosity'] = 2
+
     context.obj['config'] = ProjectConfig(context.obj['verbosity'])
     context.obj['project_dir'] = context.obj['config'].project_dir
     context.obj['db'] = Database(context.obj['config'])
@@ -31,7 +38,14 @@ def main(context, verbose, vverbose, version):
     elif not context.invoked_subcommand:
         click.echo(context.get_help())
 
-
+@main.command()
+@click.pass_context
+def status(context):
+    """Checking the running state of the current project."""
+    if context.obj['verbosity'] > 0:
+        debug('Running script status')
+    command = context.obj['config'].get('scripts.status')
+    subprocess.run(command.split(' '))
 
 
 @main.command()
@@ -40,23 +54,40 @@ def main(context, verbose, vverbose, version):
 def run(context, script):
     """Execute a script defined in project.yml."""
     if context.obj['verbosity'] > 0:
-        click.echo('Running script {}')
+        debug('Running script {}'.format(script))
     command = context.obj['config'].get('scripts.{}'.format(script))
     subprocess.run(command.split(' '))
 
 
 @main.group()
 @click.pass_context
-def db(context):
-    """Create, import, push and download database dumps."""
+def dumps(ctx):
+    """Create, import, push and download database dumps for the current project."""
 
 
 
-@db.command()
-@click.option('-n', '--name', help='Name the database dump that is being created. "%d" gets replace with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
+@dumps.command()
+@click.option('-n', '--name', help='Name of the database dump being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
 @click.pass_context
-def dump(context, name):
+def dump(ctx, name):
     """Dumps the project's database."""
     click.echo('Dumping database...')
-    filename = context.obj['db'].dump(name)
+    filename = ctx.obj['db'].dump(name)
     click.echo('Created local database dump at {}'.format(filename))
+
+def _get_dumps(ctx, args, incomplete):
+    #dumps = ctx.obj['db'].get_local_dumps(incomplete)
+    print(ctx.obj['db'])
+    return ['sdfasd', '123']
+
+@dumps.command()
+@click.argument('dump', default='*', type=click.STRING, autocompletion=_get_dumps)
+@click.pass_context
+def ls(context, pattern):
+    """Lists the project's local database dumps."""
+    project_name = context.obj['config'].get('name')
+    click.secho('[{}]'.format(project_name), fg='green', nl=False)
+    click.echo(' Local database dumps:'.format(click.format_filename(project_name)))
+    dumps = context.obj['db'].get_local_dumps(pattern)
+    for dump in dumps:
+        click.echo('  {}'.format(dump))

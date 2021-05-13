@@ -6,8 +6,10 @@ setup(
     py_modules=['project_cmd'],
     install_requires=[
         'Click',
+        'click_completion',
         'PyYAML',
         'python-dotenv',
+        'paramiko',
     ],
     entry_points='''
         [console_scripts]

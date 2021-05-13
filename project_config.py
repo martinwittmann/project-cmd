@@ -2,6 +2,7 @@ import click
 import os
 import pathlib
 import yaml
+from project_util import project_cmd_show_click_exception, debug
 from dotenv import dotenv_values
 
 CONFIG_FILENAME = 'project.yml'
@@ -24,21 +25,19 @@ class ProjectConfig:
         config_filename = False
         current_path = self.path
         if self.verbose > 0:
-            click.echo('Searching project config...')
-
+            debug('Searching project config...')
         while not config_filename:
             filename = os.path.join(current_path, CONFIG_FILENAME)
             if self.verbose > 1:
-                click.echo('Searching project config at {}'.format(filename))
+                debug('Searching project config at {}'.format(filename))
             if os.path.isfile(filename):
                 if self.verbose > 0:
-                    click.echo('Found project config at {}'.format(config_filename))
+                    debug('Found project config at {}'.format(filename))
                 return current_path
             else:
                 current_path = str(pathlib.Path(current_path).resolve().parent)
                 if self.is_root(current_path) or self.is_home_dir(current_path):
-                    raise Exception('No configuration file found. Stopped at {}.'
-                                    .format(current_path))
+                    raise click.ClickException('No configuration file ({}) found. Stopped at {}.'.format(CONFIG_FILENAME, current_path))
 
 
 
