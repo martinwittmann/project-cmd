@@ -8,6 +8,7 @@ setup(
         'project_config',
         'project_database',
         'project_hosts',
+        'project_simple_table',
         'project_util',
     ],
     install_requires=[

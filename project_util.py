@@ -9,3 +9,9 @@ def project_cmd_show_click_exception(self, file=None):
 
 def debug(message):
     click.secho(message, fg='yellow')
+
+
+def simple_table(left, right, left_width=20, left_color='white', right_color='white'):
+    left_chars = len(left)
+    right_chars = len(right)
+    click

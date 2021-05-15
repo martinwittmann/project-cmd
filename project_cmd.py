@@ -7,6 +7,7 @@ import project_config
 import project_hosts
 import project_database
 import project_util
+import project_simple_table
 
 # Monkey patching click.ClickException to better format error messages.
 click.ClickException.show = project_util.project_cmd_show_click_exception
@@ -21,8 +22,9 @@ COLOR_SUCCESS = 'bright_green'
               help='Show even more output of what project-cmd is doing.')
 @click.option('--version', is_flag=True,
               help='Show version information.')
+@click.option('-P', '--project', help='The project to run commands on. Defaults to the project in the current or a parent directory.')
 @click.pass_context
-def main(context, verbose, vverbose, version):
+def main(context, verbose, vverbose, version, project=None):
     """A standardized way to manage project files and database dumps."""
     if context.obj is None:
         context.obj = dict()
@@ -32,15 +34,45 @@ def main(context, verbose, vverbose, version):
     if vverbose:
         context.obj['verbosity'] = 2
 
-    context.obj['config'] = project_config.ProjectConfig(context.obj['verbosity'])
+    context.obj['config'] = project_config.ProjectConfig(None, context.obj['verbosity'])
     context.obj['project_dir'] = context.obj['config'].project_dir
     context.obj['db'] = project_database.Database(context.obj['config'])
     context.obj['hosts'] = project_hosts.Hosts()
+    context.obj['simple_table'] = project_simple_table.SimpleTable()
 
     if version:
         click.echo('Project-Cmd version {}'.format(VERSION))
     elif not context.invoked_subcommand:
         click.echo(context.get_help())
+
+
+@main.command()
+@click.pass_context
+def projects(context):
+    projects = context.obj['config'].get_all_projects()
+    table = list(map(lambda p: {'left': p['id'], 'right': p['location']}, projects))
+    click.echo('Found {} projects:'.format(len(table)))
+    context.obj['simple_table'].print_table(table, right_color='bright_yellow')
+
+@main.command()
+@click.pass_context
+def info(context):
+    click.echo('Found project at {}:'.format(context.obj['project_dir']))
+    data = [
+        {
+            'left': 'Project',
+            'right': context.obj['config'].get('name'),
+        },
+        {
+            'left': 'Id',
+            'right': context.obj['config'].get('id'),
+        },
+        {
+            'left': 'Domain',
+            'right': context.obj['config'].get('domain'),
+        },
+    ]
+    context.obj['simple_table'].print_table(data, right_color='bright_yellow')
 
 @main.command()
 @click.pass_context
@@ -66,25 +98,25 @@ def run(context, script):
 
 @main.group(invoke_without_command=True)
 @click.pass_context
-def dumps(ctx):
+def dumps(context):
     """Create, import, push and download database dumps for the current project."""
 
-    if ctx.invoked_subcommand is None:
-        ctx.invoke(dumps_ls)
+    if context.invoked_subcommand is None:
+        context.invoke(dumps_ls)
 
 @dumps.command()
 @click.option('-n', '--name', help='Name of the database dump being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
 @click.pass_context
-def dump(ctx, name):
+def dump(context, name):
     """Dumps the project's database."""
     click.echo('Dumping database...')
-    filename = ctx.obj['db'].dump(name)
+    filename = context.obj['db'].dump(name)
     click.secho('OK ', fg=COLOR_SUCCESS, bold=True, nl=False)
     click.secho('Database dumped to {}'.format(filename))
 
-def _get_dumps(ctx, args, incomplete):
-    #dumps = ctx.obj['db'].get_local_dumps(incomplete)
-    print(ctx.obj['db'])
+def _get_dumps(context, args, incomplete):
+    #dumps = context.obj['db'].get_local_dumps(incomplete)
+    print(context.obj['db'])
     return ['sdfasd', '123']
 
 @dumps.command(name='ls')
@@ -101,32 +133,32 @@ def dumps_ls(context, pattern):
 
 @main.group(invoke_without_command=True)
 @click.pass_context
-def hosts(ctx):
+def hosts(context):
     """Monage hosts/dns entries for localhost."""
 
-    if ctx.invoked_subcommand is None:
-        ctx.invoke(hosts_ls)
+    if context.invoked_subcommand is None:
+        context.invoke(hosts_ls)
 
 
 @hosts.command(name='ls')
 @click.pass_context
 @click.option('-v', '--verbose', is_flag=True,
               help='Show more information about hostnames.')
-def hosts_ls(ctx, verbose):
+def hosts_ls(context, verbose):
     color = COLOR_SUCCESS
 
     if verbose:
         click.echo('Using hosts file at ', nl=False)
-        click.echo(ctx.obj['hosts'].get_hosts_file_location())
+        click.echo(context.obj['hosts'].get_hosts_file_location())
 
     click.secho('Hostnames for ', nl=False)
     click.secho('127.0.0.1', fg=color, bold=True, nl=False)
     click.echo(':')
-    for name in ctx.obj['hosts'].get_localhost_hostnames():
+    for name in context.obj['hosts'].get_localhost_hostnames():
         click.secho('- ', fg='white', nl=False)
         click.secho(name, fg=color)
 
-    ip6_names = ctx.obj['hosts'].get_localhost_hostnames(entry_type='ipv6', address='::1')
+    ip6_names = context.obj['hosts'].get_localhost_hostnames(entry_type='ipv6', address='::1')
     if len(ip6_names) > 0:
         click.echo()
         click.secho('Hostnames for ', nl=False)
@@ -142,7 +174,7 @@ def hosts_ls(ctx, verbose):
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',
               default='127.0.0.1')
 @click.argument('hostname', type=click.STRING)
-def hosts_add(ctx, ip, ipv6, hostname):
+def hosts_add(context, ip, ipv6, hostname):
     if not os.geteuid() == 0:
         cmd = ['sudo']
         for part in sys.argv:
@@ -157,7 +189,7 @@ def hosts_add(ctx, ip, ipv6, hostname):
     if ipv6:
         entry_type = 'ipv6'
 
-    result = ctx.obj['hosts'].add_hostname(entry_type=entry_type, address=ip,
+    result = context.obj['hosts'].add_hostname(entry_type=entry_type, address=ip,
                                   hostname=hostname)
 
     if result:
@@ -175,7 +207,7 @@ def hosts_add(ctx, ip, ipv6, hostname):
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',
               default='127.0.0.1')
 @click.argument('hostname', type=click.STRING)
-def hosts_rm(ctx, ip, ipv6, hostname):
+def hosts_rm(context, ip, ipv6, hostname):
     if not os.geteuid() == 0:
         cmd = ['sudo']
         for part in sys.argv:
@@ -191,7 +223,7 @@ def hosts_rm(ctx, ip, ipv6, hostname):
     if ipv6:
         entry_type = 'ipv6'
 
-    result = ctx.obj['hosts'].remove_hostname(entry_type=entry_type, address=ip,
+    result = context.obj['hosts'].remove_hostname(entry_type=entry_type, address=ip,
                                               hostname=hostname)
     if result:
         click.secho('OK ', fg=COLOR_SUCCESS, bold=True, nl=False)
