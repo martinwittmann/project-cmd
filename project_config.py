@@ -9,13 +9,14 @@ from dotenv import dotenv_values
 CONFIG_FILENAME = 'project.yml'
 ENV_FILENAME = '.env'
 DOT_PROJECT_DIR = '.project'
-GLOBAL_PROJECT_DIR = '.project-cmd'
+GLOBAL_PROJECT_DIR = '.project'
 
 class ProjectConfig:
-    def __init__(self, project=None, verbose=0):
+    def __init__(self, verbose=0):
         self.verbose = verbose
         self.home_dir = str(pathlib.Path.home())
 
+    def setup_project(self, project=None):
         self.config_file = self.get_config_location(project)
         self.project_dir = os.path.dirname(self.config_file)
         self.dot_project_dir = os.path.join(self.project_dir, DOT_PROJECT_DIR)

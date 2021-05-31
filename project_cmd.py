@@ -15,6 +15,22 @@ click.ClickException.show = project_util.project_cmd_show_click_exception
 VERSION = '0.1'
 COLOR_SUCCESS = 'bright_green'
 
+def _get_dumps(context, args, incomplete):
+    #dumps = context.obj['db'].get_local_dumps(incomplete)
+    print(context.obj['db'])
+    return ['sdfasd', '123']
+
+def _project_names(context, args, incomplete):
+    projects = context.obj['config'].get_all_projects()
+    return [p.id for p in projects if incomplete in p.id]
+
+
+def _project_setup(context):
+    context.obj['config'].setup_project(context.obj['project'])
+    context.obj['project_dir'] = context.obj['config'].project_dir
+    context.obj['db'] = project_database.Database(context.obj['config'])
+
+
 @click.group(invoke_without_command=True)
 @click.option('-v', '--verbose', is_flag=True,
               help='Show more output of what project-cmd is doing.')
@@ -34,9 +50,8 @@ def main(context, verbose, vverbose, version, project=None):
     if vverbose:
         context.obj['verbosity'] = 2
 
-    context.obj['config'] = project_config.ProjectConfig(None, context.obj['verbosity'])
-    context.obj['project_dir'] = context.obj['config'].project_dir
-    context.obj['db'] = project_database.Database(context.obj['config'])
+    context.obj['project'] = project
+    context.obj['config'] = project_config.ProjectConfig(context.obj['verbosity'])
     context.obj['hosts'] = project_hosts.Hosts()
     context.obj['simple_table'] = project_simple_table.SimpleTable()
 
@@ -46,17 +61,46 @@ def main(context, verbose, vverbose, version, project=None):
         click.echo(context.get_help())
 
 
+
+
+
+
 @main.command()
 @click.pass_context
-def projects(context):
+@click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids. Used for autocompletion of pcd.')
+def projects(context, only_ids):
     projects = context.obj['config'].get_all_projects()
-    table = list(map(lambda p: {'left': p['id'], 'right': p['location']}, projects))
-    click.echo('Found {} projects:'.format(len(table)))
-    context.obj['simple_table'].print_table(table, right_color='bright_yellow')
+
+    if (only_ids):
+        ids = list(map(lambda p: p['id'], projects))
+        click.echo(' '.join(ids))
+    else:
+        table = list(map(lambda p: {'left': p['id'], 'right': p['location']}, projects))
+        click.echo('Found {} projects:'.format(len(table)))
+        context.obj['simple_table'].print_table(table, right_color='bright_yellow')
+
+@main.command()
+@click.pass_context
+@click.argument('project', type=click.STRING)
+def project_dir(context, project):
+    projects = context.obj['config'].get_all_projects()
+    for p in projects:
+        if p['id'] == project:
+            click.echo(p['location'])
+            return
+    click.secho('ERROR ', fg='bright_red', bold=True, nl=False)
+    click.echo('Did not find a project with the name ', nl=False)
+    click.secho('{}'.format(project), fg='bright_yellow', nl=False)
+    click.echo('.')
+
+
+
+
 
 @main.command()
 @click.pass_context
 def info(context):
+    _project_setup(context)
     click.echo('Found project at {}:'.format(context.obj['project_dir']))
     data = [
         {
@@ -78,6 +122,7 @@ def info(context):
 @click.pass_context
 def status(context):
     """Checking the running state of the current project."""
+    _project_setup(context)
     if context.obj['verbosity'] > 0:
         project_util.debug('Running script status')
     command = context.obj['config'].get('scripts.status')
@@ -90,6 +135,7 @@ def status(context):
 @click.pass_context
 def run(context, script):
     """Execute a script defined in project.yml."""
+    _project_setup(context)
     if context.obj['verbosity'] > 0:
         project_util.debug('Running script {}'.format(script))
     command = context.obj['config'].get('scripts.{}'.format(script))
@@ -100,6 +146,7 @@ def run(context, script):
 @click.pass_context
 def dumps(context):
     """Create, import, push and download database dumps for the current project."""
+    _project_setup(context)
 
     if context.invoked_subcommand is None:
         context.invoke(dumps_ls)
@@ -113,11 +160,6 @@ def dump(context, name):
     filename = context.obj['db'].dump(name)
     click.secho('OK ', fg=COLOR_SUCCESS, bold=True, nl=False)
     click.secho('Database dumped to {}'.format(filename))
-
-def _get_dumps(context, args, incomplete):
-    #dumps = context.obj['db'].get_local_dumps(incomplete)
-    print(context.obj['db'])
-    return ['sdfasd', '123']
 
 @dumps.command(name='ls')
 @click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_dumps)
