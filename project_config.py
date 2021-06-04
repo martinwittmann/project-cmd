@@ -59,6 +59,12 @@ class ProjectConfig:
 
     def is_root(self, path):
         return os.path.dirname(path) == path
+    def has_key(self, key):
+        try:
+            self.get(key)
+            return True
+        except Exception:
+            return False
 
     def get(self, key='', config=None):
         if config is None:
@@ -69,10 +75,14 @@ class ProjectConfig:
 
         parts = key.split('.')
         if len(parts) == 1:
+            if key not in config:
+                raise 'Config key not found "' + key + '".'
             return config[key]
         else:
             parent_key = '.'.join(parts[:-1])
             parent = self.get(parent_key, config=config)
+            if parts[1] not in parent:
+                raise 'Config key not found "' + parts[1] + '".'
             return parent[parts[1]]
 
     def get_global_config_location(self):

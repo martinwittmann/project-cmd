@@ -14,6 +14,7 @@ click.ClickException.show = project_util.project_cmd_show_click_exception
 
 VERSION = '0.1'
 COLOR_SUCCESS = 'bright_green'
+COLOR_ERROR = 'bright_red'
 
 def _get_dumps(ctx, args, incomplete):
     _project_setup(ctx)
@@ -23,7 +24,7 @@ def _get_dumps(ctx, args, incomplete):
 def _project_names(ctx, args, incomplete):
     _project_setup(ctx)
     projects = ctx.obj['config'].get_all_projects()
-    return [p.id for p in projects if incomplete in p.id]
+    return [p['id'] for p in projects if p['id'].startswith(incomplete)]
 
 
 def _project_setup(ctx, project=None):
@@ -35,10 +36,6 @@ def _project_setup(ctx, project=None):
     ctx.obj['hosts'] = project_hosts.Hosts()
     ctx.obj['simple_table'] = project_simple_table.SimpleTable()
 
-    ctx.obj['project'] = project
-    ctx.obj['config'].setup_project(ctx.obj['project'])
-
-    ctx.obj['project_dir'] = ctx.obj['config'].project_dir
     ctx.obj['db'] = project_database.Database(ctx.obj['config'])
 
 
@@ -62,7 +59,7 @@ def main(ctx, verbose, vverbose, version, project=None):
     if version:
         click.echo('Project-Cmd version {}'.format(VERSION))
     elif not ctx.invoked_subcommand:
-        click.echo(ctx.get_help())
+        ctx.invoke(info)
 
 
 @main.command()
@@ -81,23 +78,10 @@ def projects(ctx, only_ids):
 
 @main.command()
 @click.pass_context
-@click.argument('project', type=click.STRING)
-def project_dir(ctx, project):
-    projects = ctx.obj['config'].get_all_projects()
-    for p in projects:
-        if p['id'] == project:
-            click.echo(p['location'])
-            return
-    click.secho('ERROR ', fg='bright_red', bold=True, nl=False)
-    click.echo('Did not find a project with the name ', nl=False)
-    click.secho('{}'.format(project), fg='bright_yellow', nl=False)
-    click.echo('.')
-
-@main.command()
-@click.pass_context
 def info(ctx):
     _project_setup(ctx)
-    click.echo('Found project at {}:'.format(ctx.obj['project_dir']))
+    ctx.obj['config'].setup_project()
+    click.echo('Found project at {}:'.format(ctx.obj['config'].project_dir))
     data = [
         {
             'left': 'Project',
@@ -107,11 +91,13 @@ def info(ctx):
             'left': 'Id',
             'right': ctx.obj['config'].get('id'),
         },
-        {
+    ]
+
+    if ctx.obj['config'].has_key('domain'):
+        data.append({
             'left': 'Domain',
             'right': ctx.obj['config'].get('domain'),
-        },
-    ]
+        })
     ctx.obj['simple_table'].print_table(data, right_color='bright_yellow')
 
 @main.command()
@@ -119,6 +105,7 @@ def info(ctx):
 def status(ctx):
     """Checking the running state of the current project."""
     _project_setup(ctx)
+    ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
         project_util.debug('Running script status')
     command = ctx.obj['config'].get('scripts.status')
@@ -132,17 +119,33 @@ def status(ctx):
 def run(ctx, script):
     """Execute a script defined in project.yml."""
     _project_setup(ctx)
+    ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
         project_util.debug('Running script {}'.format(script))
     command = ctx.obj['config'].get('scripts.{}'.format(script))
     subprocess.run(command.split(' '))
 
 
+@main.command()
+@click.pass_context
+@click.argument('name', autocompletion=_project_names)
+def cd(ctx, name):
+    projects = ctx.obj['config'].get_all_projects()
+    for project in projects:
+        if project['id'] == name:
+            click.echo('cd ' + project['location'])
+            return
+            break
+
+    click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+    click.secho('Project "' + name + '" could not be found.')
+
 @main.group(invoke_without_command=True)
 @click.pass_context
 def dumps(ctx):
     """Create, import, push and download database dumps for the current project."""
     _project_setup(ctx)
+    ctx.obj['config'].setup_project()
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(dumps_ls)
