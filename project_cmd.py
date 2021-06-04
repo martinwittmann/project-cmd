@@ -61,10 +61,16 @@ def main(ctx, verbose, vverbose, version, project=None):
     elif not ctx.invoked_subcommand:
         ctx.invoke(info)
 
+# Quick and dirty alias for projects
+@main.command()
+@click.pass_context
+@click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
+def l(ctx, only_ids):
+    return ctx.invoke(projects, only_ids=only_ids)
 
 @main.command()
 @click.pass_context
-@click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids. Used for autocompletion of pcd.')
+@click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
 def projects(ctx, only_ids):
     projects = ctx.obj['config'].get_all_projects()
 
@@ -75,6 +81,11 @@ def projects(ctx, only_ids):
         table = list(map(lambda p: {'left': p['id'], 'right': p['location']}, projects))
         click.echo('Found {} projects:'.format(len(table)))
         ctx.obj['simple_table'].print_table(table, right_color='bright_yellow')
+
+@main.command()
+@click.pass_context
+def i(ctx):
+    return ctx.invoke(info)
 
 @main.command()
 @click.pass_context
@@ -102,6 +113,11 @@ def info(ctx):
 
 @main.command()
 @click.pass_context
+def s(ctx):
+    return ctx.invoke(status)
+
+@main.command()
+@click.pass_context
 def status(ctx):
     """Checking the running state of the current project."""
     _project_setup(ctx)
@@ -112,6 +128,11 @@ def status(ctx):
     #subprocess.run(command.split(' '))
     subprocess.run(['sudo', 'ls', '-la'])
 
+@main.command()
+@click.argument('script')
+@click.pass_context
+def x(ctx, script):
+    return ctx.invoke(run, script)
 
 @main.command()
 @click.argument('script')
@@ -129,13 +150,18 @@ def run(ctx, script):
 @main.command()
 @click.pass_context
 @click.argument('name', autocompletion=_project_names)
+def c(ctx, name):
+    return ctx.invoke(cd, name=name)
+
+@main.command()
+@click.pass_context
+@click.argument('name', autocompletion=_project_names)
 def cd(ctx, name):
     projects = ctx.obj['config'].get_all_projects()
     for project in projects:
         if project['id'] == name:
             click.echo('cd ' + project['location'])
             return
-            break
 
     click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
     click.secho('Project "' + name + '" could not be found.')
@@ -150,15 +176,28 @@ def dumps(ctx):
     if ctx.invoked_subcommand is None:
         ctx.invoke(dumps_ls)
 
+@main.command()
+@click.option('-n', '--name', help='Name of the database dump being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
+@click.pass_context
+def d(ctx, name):
+    _project_setup(ctx)
+    ctx.obj['config'].setup_project()
+    ctx.invoke(dump, name=name)
+
 @dumps.command()
 @click.option('-n', '--name', help='Name of the database dump being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
 @click.pass_context
 def dump(ctx, name):
     """Dumps the project's database."""
     click.echo('Dumping database...')
-    filename = ctx.obj['db'].dump(name)
-    click.secho('OK ', fg=COLOR_SUCCESS, bold=True, nl=False)
-    click.secho('Database dumped to {}'.format(filename))
+    try:
+        filename = ctx.obj['db'].dump(name)
+        click.secho('OK ', fg=COLOR_SUCCESS, bold=True, nl=False)
+        click.secho('Database dumped to {}'.format(filename))
+    except Exception:
+        click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+        click.secho('Error creating database dump.')
+
 
 @dumps.command(name='ls')
 @click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_dumps)
@@ -172,6 +211,7 @@ def dumps_ls(ctx, pattern):
     for dump in dumps:
         click.echo('  {}'.format(dump))
 
+
 @main.group(invoke_without_command=True)
 @click.pass_context
 def hosts(ctx):
@@ -180,6 +220,12 @@ def hosts(ctx):
     if ctx.invoked_subcommand is None:
         ctx.invoke(hosts_ls)
 
+@main.command()
+@click.pass_context
+@click.option('-v', '--verbose', is_flag=True,
+              help='Show more information about hostnames.')
+def h(ctx, verbose):
+    return ctx.invoke(hosts_ls, verbose=verbose)
 
 @hosts.command(name='ls')
 @click.pass_context
@@ -208,6 +254,16 @@ def hosts_ls(ctx, verbose):
         for name in ip6_names:
             click.secho('- ', fg='white', nl=False)
             click.secho(name, fg=color)
+
+
+@main.command()
+@click.pass_context
+@click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
+@click.option('-i', '--ip', help='The ip address for which to add an entry.',
+              default='127.0.0.1')
+@click.argument('hostname', type=click.STRING)
+def ha(ctx, ip, ipv6, hostname):
+    ctx.invoke(hosts_add, ip=ip, ipv6=ipv6, hostname=hostname)
 
 @hosts.command(name='add')
 @click.pass_context
@@ -241,6 +297,16 @@ def hosts_add(ctx, ip, ipv6, hostname):
         click.secho('{}'.format(ip), fg='bright_yellow', nl=False)
         click.echo('.')
         click.echo('')
+
+
+@main.command()
+@click.pass_context
+@click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
+@click.option('-i', '--ip', help='The ip address for which to add an entry.',
+              default='127.0.0.1')
+@click.argument('hostname', type=click.STRING)
+def hr(ctx, ip, ipv6, hostname):
+    ctx.invoke(hosts_rm, ip=ip, ipv6=ipv6, hostname=hostname)
 
 @hosts.command(name='rm')
 @click.pass_context
