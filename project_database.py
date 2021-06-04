@@ -30,7 +30,7 @@ class Database:
         return command
 
 
-    def get_local_dumps(self, pattern):
+    def get_local_dumps(self, pattern='*'):
         path = os.path.join(self.config.dot_project_dir, DUMPS_DIR)
         pattern = os.path.join(path, pattern)
         dumps = []
