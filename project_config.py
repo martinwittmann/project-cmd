@@ -6,10 +6,22 @@ import yaml
 from project_util import project_cmd_show_click_exception, debug
 from dotenv import dotenv_values
 
+class ConfigKeyNotFoundException(Exception):
+    pass
+
 CONFIG_FILENAME = 'project.yml'
 ENV_FILENAME = '.env'
 DOT_PROJECT_DIR = '.project'
 GLOBAL_PROJECT_DIR = '.project'
+GLOBAL_CONFIG_FILENAME = 'config.yml'
+
+DEFAULT_PROJECT_CONFIG = {
+    'db': {
+        'dump_file_extension': '.sql',
+    },
+}
+
+DEFAULT_GLOBAL_CONFIG = {}
 
 class ProjectConfig:
     def __init__(self, verbose=0):
@@ -20,7 +32,8 @@ class ProjectConfig:
         self.config_file = self.get_config_location(project)
         self.project_dir = os.path.dirname(self.config_file)
         self.dot_project_dir = os.path.join(self.project_dir, DOT_PROJECT_DIR)
-        self._config = self.load_config(self.config_file)
+        self._config = self.load_config(self.config_file, DEFAULT_PROJECT_CONFIG)
+        self._global_config = self.get_global_config()
         self.env = dotenv_values(os.path.join(self.project_dir, ENV_FILENAME))
 
     def get_config_location(self, project=None):
@@ -45,9 +58,10 @@ class ProjectConfig:
                 if self.is_root(path) or self.is_home_dir(path):
                     raise click.ClickException('No configuration file ({}) found. Stopped at {}.'.format(CONFIG_FILENAME, path))
 
-    def load_config(self, filename):
+    def load_config(self, filename, default_config={}):
         with open(filename) as file:
-            return yaml.load(file, yaml.FullLoader)
+            config = yaml.load(file, yaml.FullLoader)
+            return {**default_config, **config}
 
     def get_project_path(self, project):
         path = os.path.join(self.get_global_projects_dir(), project)
@@ -67,23 +81,24 @@ class ProjectConfig:
             return False
 
     def get(self, key='', config=None):
-        if config is None:
-            config = self._config
+        try:
+            if config is None:
+                if key.startswith('global.'):
+                    config = self._global_config
+                    key = key[7:]
+                else:
+                    config = self._config
 
-        if key == '':
-            return config
+            result = config
+            parts = key.split('.')
+            for part in parts:
+                result = result[part]
+            return result
 
-        parts = key.split('.')
-        if len(parts) == 1:
-            if key not in config:
-                raise 'Config key not found "' + key + '".'
-            return config[key]
-        else:
-            parent_key = '.'.join(parts[:-1])
-            parent = self.get(parent_key, config=config)
-            if parts[1] not in parent:
-                raise 'Config key not found "' + parts[1] + '".'
-            return parent[parts[1]]
+        except ConfigKeyNotFoundException as e:
+            click.secho('ERROR ', fg='bright_red', bold=True, nl=False)
+            click.echo('Getting config key: ' + str(e))
+            return None
 
     def get_global_config_location(self):
         return os.path.join(self.home_dir, GLOBAL_PROJECT_DIR)
@@ -114,3 +129,7 @@ class ProjectConfig:
                 'location': project_path,
             })
         return result
+
+    def get_global_config(self):
+        filename = os.path.join(self.get_global_config_location(), GLOBAL_CONFIG_FILENAME)
+        return self.load_config(filename, DEFAULT_GLOBAL_CONFIG)

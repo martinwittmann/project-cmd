@@ -8,6 +8,7 @@ import project_hosts
 import project_database
 import project_util
 import project_simple_table
+import project_ssh
 
 # Monkey patching click.ClickException to better format error messages.
 click.ClickException.show = project_util.project_cmd_show_click_exception
@@ -16,8 +17,9 @@ VERSION = '0.1'
 COLOR_SUCCESS = 'bright_green'
 COLOR_ERROR = 'bright_red'
 
-def _get_dumps(ctx, args, incomplete):
+def _get_local_dumps(ctx, args, incomplete):
     _project_setup(ctx)
+    ctx.obj['config'].setup_project()
     dumps = ctx.obj['db'].get_local_dumps(incomplete + '*')
     return dumps
 
@@ -35,8 +37,8 @@ def _project_setup(ctx, project=None):
     ctx.obj['config'] = project_config.ProjectConfig(ctx.obj['verbosity'])
     ctx.obj['hosts'] = project_hosts.Hosts()
     ctx.obj['simple_table'] = project_simple_table.SimpleTable()
-
     ctx.obj['db'] = project_database.Database(ctx.obj['config'])
+    ctx.obj['ssh'] = project_ssh.ProjectSsh(ctx.obj['config'])
 
 
 @click.group(invoke_without_command=True)
@@ -199,17 +201,60 @@ def dump(ctx, name):
         click.secho('Error creating database dump.')
 
 
-@dumps.command(name='ls')
-@click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_dumps)
+@main.command()
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_local_dumps)
 @click.pass_context
-def dumps_ls(ctx, pattern):
+def dl(ctx, pattern, verbose):
+    _project_setup(ctx)
+    ctx.obj['config'].setup_project()
+    ctx.invoke(dumps_ls, pattern=pattern, verbose=verbose)
+
+@dumps.command(name='ls')
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_local_dumps)
+@click.pass_context
+def dumps_ls(ctx, pattern, verbose):
     """Lists the project's local database dumps."""
+    project_id = ctx.obj['config'].get('id')
     project_name = ctx.obj['config'].get('name')
-    click.secho('[{}]'.format(project_name), fg='green', nl=False)
-    click.echo(' Local database dumps:'.format(click.format_filename(project_name)))
-    dumps = ctx.obj['db'].get_local_dumps(pattern)
-    for dump in dumps:
-        click.echo('  {}'.format(dump))
+    click.secho('[{}]'.format(project_name), fg='green', bold=True)
+    click.echo()
+    click.echo('Local database dumps:'.format(click.format_filename(project_name)))
+    local_dumps = ctx.obj['db'].get_local_dumps(pattern)
+    if len(local_dumps) < 1:
+        click.secho('  [No database dumps found]', fg='bright_yellow')
+
+    for dump in local_dumps:
+        click.echo('- {}'.format(dump))
+
+
+    click.echo('')
+    click.echo('Remote database dumps:')
+    if verbose:
+        ctx.obj['ssh'].set_verbosity(1)
+    ctx.obj['ssh'].connect()
+    remote_dumps = ctx.obj['ssh'].get_dumps(project_id)
+    if len(remote_dumps) < 1:
+        click.secho('[No database dumps found]', fg='bright_yellow')
+    for dump in remote_dumps:
+        click.echo('- {}'.format(dump))
+
+@dumps.command(name='push')
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('dump', type=click.STRING, autocompletion=_get_local_dumps)
+@click.pass_context
+def push_dump(ctx, dump, verbose):
+    ctx.obj['config'].setup_project()
+    project_id = ctx.obj['config'].get('id')
+    local_dump = ctx.obj['db'].get_dump_filename(dump)
+    if local_dump is None:
+        click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+        click.echo('Database dump not found in project {}: {}'.format(ctx.obj['config'].get('id'), dump))
+    ctx.obj['ssh'].connect()
+    remote_dumps_dir = ctx.obj['ssh'].get_remote_dir(project_id, 'dumps')
+    remote_filename = os.path.join(remote_dumps_dir, os.path.basename(local_dump))
+    ctx.obj['ssh'].put_file(local_dump, remote_filename)
 
 
 @main.group(invoke_without_command=True)
