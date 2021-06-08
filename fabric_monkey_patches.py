@@ -4,10 +4,6 @@ import stat
 import click
 from fabric.transfer import Result
 
-def debug(message):
-    click.echo(message)
-
-
 try:
     from pathlib import Path
 except ImportError:
@@ -232,7 +228,6 @@ def fabric_put_file(self, local, remote=None, preserve_mode=True, callback=None)
             )
         else:
             remote = local_base
-            debug("Massaged empty remote path into {!r}".format(remote))
     elif self.is_remote_dir(remote):
         # non-empty local_base implies a) text file path or b) FLO which
         # had a non-empty .name attribute. huzzah!
@@ -257,20 +252,9 @@ def fabric_put_file(self, local, remote=None, preserve_mode=True, callback=None)
     remote = posixpath.join(
         self.sftp.getcwd() or self.sftp.normalize("."), remote
     )
-    if remote != prejoined_remote:
-        msg = "Massaged relative remote path {!r} into {!r}"
-        debug(msg.format(prejoined_remote, remote))
 
     # Massage local path
     orig_local = local
-    if not is_file_like:
-        local = os.path.abspath(local)
-        if local != orig_local:
-            debug(
-                "Massaged relative local path {!r} into {!r}".format(
-                    orig_local, local
-                )
-            )  # noqa
 
     # Run Paramiko-level .put() (side-effects only. womp.)
     # TODO: push some of the path handling into Paramiko; it should be
@@ -281,7 +265,6 @@ def fabric_put_file(self, local, remote=None, preserve_mode=True, callback=None)
     # If local appears to be a file-like object, use sftp.putfo, not put
     if is_file_like:
         msg = "Uploading file-like object {!r} to {!r}"
-        debug(msg.format(local, remote))
         pointer = local.tell()
         try:
             local.seek(0)
@@ -289,7 +272,6 @@ def fabric_put_file(self, local, remote=None, preserve_mode=True, callback=None)
         finally:
             local.seek(pointer)
     else:
-        debug("Uploading {!r} to {!r}".format(local, remote))
         self.sftp.put(localpath=local, remotepath=remote, callback=callback)
         # Set mode to same as local end
         # TODO: Push this down into SFTPClient sometime (requires backwards

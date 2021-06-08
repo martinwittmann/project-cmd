@@ -24,6 +24,13 @@ def _get_local_dumps(ctx, args, incomplete):
     dumps = ctx.obj['db'].get_local_dumps(incomplete + '*')
     return dumps
 
+def _get_remote_dumps(ctx, args, incomplete):
+    _project_setup(ctx)
+    ctx.obj['config'].setup_project()
+    project_id = ctx.obj['config'].get('id')
+    dumps = ctx.obj['ssh'].get_dumps(project_id, incomplete + '*')
+    return dumps
+
 def _project_names(ctx, args, incomplete):
     _project_setup(ctx)
     projects = ctx.obj['config'].get_all_projects()
@@ -254,9 +261,35 @@ def push_dump(ctx, dump, verbose):
         click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
         click.echo('Database dump not found in project {}: {}'.format(ctx.obj['config'].get('id'), dump))
     ctx.obj['ssh'].connect()
+
+    basename = os.path.basename(local_dump)
     remote_dumps_dir = ctx.obj['ssh'].get_remote_dir(project_id, 'dumps')
-    remote_filename = os.path.join(remote_dumps_dir, os.path.basename(local_dump))
+    remote_filename = os.path.join(remote_dumps_dir, basename)
     ctx.obj['ssh'].put_file(local_dump, remote_filename)
+
+    click.secho('DONE ', fg=COLOR_SUCCESS, bold=True, nl=False)
+    click.echo('Uploaded local database dump {} to server.'.format(basename))
+
+
+@dumps.command(name='pull')
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('dump', type=click.STRING, autocompletion=_get_remote_dumps)
+@click.pass_context
+def pull_dump(ctx, dump, verbose):
+    ctx.obj['config'].setup_project()
+    project_id = ctx.obj['config'].get('id')
+    local_dump = ctx.obj['db'].get_dump_filename(dump)
+    if local_dump is None:
+        click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+        click.echo('Database dump not found in project {}: {}'.format(ctx.obj['config'].get('id'), dump))
+    ctx.obj['ssh'].connect()
+
+    basename = os.path.basename(local_dump)
+    remote_dumps_dir = ctx.obj['ssh'].get_remote_dir(project_id, 'dumps')
+    remote_filename = os.path.join(remote_dumps_dir, basename)
+    ctx.obj['ssh'].get_file(remote_filename, local_dump)
+    click.secho('DONE ', fg=COLOR_SUCCESS, bold=True, nl=False)
+    click.echo('Downloaded local database dump {} from server.'.format(basename))
 
 
 @main.group(invoke_without_command=True)
