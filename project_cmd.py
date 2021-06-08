@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import click
 import subprocess
@@ -239,6 +240,7 @@ def dumps_ls(ctx, pattern, verbose):
         click.secho('[No database dumps found]', fg='bright_yellow')
     for dump in remote_dumps:
         click.echo('- {}'.format(dump))
+
 
 @dumps.command(name='push')
 @click.option('-v', '--verbose', is_flag=True)

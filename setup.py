@@ -16,8 +16,8 @@ setup(
         'click_completion',
         'PyYAML',
         'python-dotenv',
-        'fabric',
         'python_hosts',
+        'fabric',
     ],
     entry_points='''
         [console_scripts]

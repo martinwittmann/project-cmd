@@ -1,7 +1,12 @@
 import os
 import click
+import types
 #from paramiko import SSHClient, AutoAddPolicy, AuthenticationException
-from fabric import Connection
+from fabric import Connection, transfer
+from fabric_monkey_patches import fabric_get_file, fabric_put_file
+
+transfer.Transfer.get = fabric_get_file
+transfer.Transfer.put = fabric_put_file
 
 REMOTE_DIR_DUMPS = 'dumps'
 REMOTE_DIR_FILES = 'files'
@@ -88,9 +93,15 @@ class ProjectSsh:
         return self.list_remote_files(dir, pattern=file_pattern)
 
     def put_file(self, local_filename, remote_filename):
-        self.connection.put(local=local_filename, remote=remote_filename)
+        with click.progressbar(length=10) as bar:
+            def progress(current, total):
+                bar.length = total
+                bar.update(current)
+        self.connection.put(local=local_filename, remote=remote_filename, callback=progress)
 
     def get_file(self, local_filename, remote_filename):
-        self.connection.get(local=local_filename, remote=remote_filename)
-
-
+        with click.progressbar(length=10) as bar:
+            def progress(current, total):
+                bar.length = total
+                bar.update(current)
+            self.connection.get(local=local_filename, remote=remote_filename, callback=progress)
