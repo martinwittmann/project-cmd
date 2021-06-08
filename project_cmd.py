@@ -295,7 +295,7 @@ def pull_dump(ctx, dump, verbose):
 @main.group(invoke_without_command=True)
 @click.pass_context
 def hosts(ctx):
-    """Monage hosts/dns entries for localhost."""
+    """Manage hosts/dns entries for localhost."""
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(hosts_ls)
