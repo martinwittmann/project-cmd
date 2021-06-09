@@ -31,20 +31,22 @@ class Database:
         return command
 
 
-    def get_local_dumps(self, pattern='*', include_size=False):
+    def get_local_dumps(self, pattern='*', include_details=False):
         path = os.path.join(self.config.dot_project_dir, DUMPS_DIR)
         pattern = os.path.join(path, pattern)
         dumps = []
         for file in glob.glob(pattern):
             if os.path.isfile(os.path.join(path, file)):
-                if include_size:
+                if include_details:
+                    dump_date = datetime.datetime.fromtimestamp(os.path.getctime(file))
                     dumps.append({
                         'name': os.path.basename(file),
+                        'date': dump_date.strftime('%Y-%m-%d %H:%M'),
                         'size': get_file_size(file, formatted=True),
                     })
                 else:
                     dumps.append(os.path.basename(file))
-        dumps.sort(key=(lambda d: d['name']) if include_size else None)
+        dumps.sort(key=(lambda d: d['name']) if include_details else None)
         dumps.reverse()
         return dumps
 

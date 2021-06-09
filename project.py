@@ -228,16 +228,34 @@ def dumps_ls(ctx, pattern, verbose):
     click.secho('[{}]'.format(project_name), fg='green', bold=True)
     click.echo()
     click.echo('Local database dumps:'.format(click.format_filename(project_name)))
-    local_dumps = ctx.obj['db'].get_local_dumps(pattern, include_size=True)
+    local_dumps = ctx.obj['db'].get_local_dumps(pattern, include_details=True)
     if len(local_dumps) < 1:
         click.secho('  [No database dumps found]', fg='bright_yellow')
 
     else:
-        #for dump in local_dumps:
-            #click.echo('- {} ({})'.format(dump['name'], dump['size']))
-
-        table = list(map(lambda d: {'left': d['name'], 'right': d['size']}, local_dumps))
-        ctx.obj['simple_table'].print_table(table, left_color='bright_yellow')
+        table = list(map(lambda d: [d['name'], d['date'], d['size']], local_dumps))
+        ctx.obj['simple_table'].print(
+            table,
+            border_styles={
+                'fg': (100, 100, 100),
+            },
+            column_settings=[
+                {},
+                {
+                    'align': 'center',
+                },
+                {
+                    'align': 'right',
+                },
+            ],
+            headers=[
+                'Name',
+                'Date',
+                'Size',
+            ],
+            width='full',
+            show_horizontal_lines=False,
+        )
 
     click.echo('')
     click.echo('Remote database dumps:')
@@ -479,10 +497,14 @@ def test(ctx):
             'styles': {
                 'fg': 'bright_yellow',
             },
+            'align': 'center',
         },
         {
             'styles': {
                 'fg': 'bright_green',
             },
+            'align': 'right',
         },
-    ], width='full')
+    ], border_styles={
+        'fg': (100, 100, 100),
+    })
