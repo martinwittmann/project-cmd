@@ -3,6 +3,7 @@ import os.path
 import subprocess
 from os import path, listdir
 import glob
+from project_util import get_file_size
 
 DUMPS_DIR = 'dumps'
 
@@ -30,14 +31,20 @@ class Database:
         return command
 
 
-    def get_local_dumps(self, pattern='*'):
+    def get_local_dumps(self, pattern='*', include_size=False):
         path = os.path.join(self.config.dot_project_dir, DUMPS_DIR)
         pattern = os.path.join(path, pattern)
         dumps = []
         for file in glob.glob(pattern):
             if os.path.isfile(os.path.join(path, file)):
-                dumps.append(os.path.basename(file))
-        dumps.sort()
+                if include_size:
+                    dumps.append({
+                        'name': os.path.basename(file),
+                        'size': get_file_size(file, formatted=True),
+                    })
+                else:
+                    dumps.append(os.path.basename(file))
+        dumps.sort(key=(lambda d: d['name']) if include_size else None)
         dumps.reverse()
         return dumps
 

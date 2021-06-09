@@ -1,8 +1,9 @@
 import os
 import click
-#from paramiko import SSHClient, AutoAddPolicy, AuthenticationException
 from fabric import Connection, transfer
 from fabric_monkey_patches import fabric_get_file, fabric_put_file
+
+from project_util import format_file_size
 
 transfer.Transfer.get = fabric_get_file
 transfer.Transfer.put = fabric_put_file
@@ -109,8 +110,8 @@ class ProjectSsh:
                 uploaded = current
                 bar.length = total
                 bar.label = '{}/{}'.format(
-                    self.format_file_size(current),
-                    self.format_file_size(total),
+                    format_file_size(current),
+                    format_file_size(total),
                 )
                 bar.update(diff)
 
@@ -136,17 +137,10 @@ class ProjectSsh:
                 downloaded = current
                 bar.length = total
                 bar.label = '{}/{}'.format(
-                    self.format_file_size(current),
-                    self.format_file_size(total),
+                    format_file_size(current),
+                    format_file_size(total),
                 )
                 bar.update(diff)
             self.connection.get(local=local_filename, remote=remote_filename,
                                 callback=progress)
 
-    def format_file_size(self, size, suffix='B'):
-        for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
-            if abs(size) < 1024.0:
-                return '{:.1f} {}{}'.format(size, unit, suffix)
-            size /= 1024.0
-
-        return '{:.1f}{}{}'.format(size, 'Y', suffix)

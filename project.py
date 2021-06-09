@@ -187,9 +187,18 @@ def dumps(ctx):
         ctx.invoke(dumps_ls)
 
 @main.command()
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_local_dumps)
+@click.pass_context
+def d(ctx, pattern, verbose):
+    _project_setup(ctx)
+    ctx.obj['config'].setup_project()
+    ctx.invoke(dumps_ls, pattern=pattern, verbose=verbose)
+
+@main.command()
 @click.option('-n', '--name', help='Name of the database dump being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
 @click.pass_context
-def d(ctx, name):
+def dd(ctx, name):
     _project_setup(ctx)
     ctx.obj['config'].setup_project()
     ctx.invoke(dump, name=name)
@@ -208,16 +217,6 @@ def dump(ctx, name):
         click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
         click.secho('Error creating database dump.')
 
-
-@main.command()
-@click.option('-v', '--verbose', is_flag=True)
-@click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_local_dumps)
-@click.pass_context
-def dl(ctx, pattern, verbose):
-    _project_setup(ctx)
-    ctx.obj['config'].setup_project()
-    ctx.invoke(dumps_ls, pattern=pattern, verbose=verbose)
-
 @dumps.command(name='ls')
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_local_dumps)
@@ -229,13 +228,16 @@ def dumps_ls(ctx, pattern, verbose):
     click.secho('[{}]'.format(project_name), fg='green', bold=True)
     click.echo()
     click.echo('Local database dumps:'.format(click.format_filename(project_name)))
-    local_dumps = ctx.obj['db'].get_local_dumps(pattern)
+    local_dumps = ctx.obj['db'].get_local_dumps(pattern, include_size=True)
     if len(local_dumps) < 1:
         click.secho('  [No database dumps found]', fg='bright_yellow')
 
-    for dump in local_dumps:
-        click.echo('- {}'.format(dump))
+    else:
+        #for dump in local_dumps:
+            #click.echo('- {} ({})'.format(dump['name'], dump['size']))
 
+        table = list(map(lambda d: {'left': d['name'], 'right': d['size']}, local_dumps))
+        ctx.obj['simple_table'].print_table(table, left_color='bright_yellow')
 
     click.echo('')
     click.echo('Remote database dumps:')
@@ -247,6 +249,23 @@ def dumps_ls(ctx, pattern, verbose):
         click.secho('[No database dumps found]', fg='bright_yellow')
     for dump in remote_dumps:
         click.echo('- {}'.format(dump))
+
+
+@dumps.command(name='rm')
+@click.argument('name', type=click.STRING, autocompletion=_get_local_dumps)
+@click.pass_context
+def dumps_rm_local(ctx, name):
+    try:
+        filename = ctx.obj['db'].get_dump_filename(name)
+        if filename is None or not os.path.isfile(filename):
+            raise Exception('Can\'t delete database dump "{}": File not found.'.format(name))
+        basename = os.path.basename(filename)
+        os.remove(filename)
+        click.secho('DONE ', fg=COLOR_SUCCESS, bold=True, nl=False)
+        click.echo('Deleted database dump "{}".'.format(basename))
+    except Exception as e:
+        click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+        click.echo(e)
 
 
 @dumps.command(name='push')
@@ -422,3 +441,48 @@ def hosts_rm(ctx, ip, ipv6, hostname):
         click.echo('')
 
 
+
+@main.command()
+@click.pass_context
+def test(ctx):
+    _project_setup(ctx)
+    data = [
+        [
+            1,
+            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
+            'Not ok',
+        ],
+        [
+            2,
+            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
+            'asa sds as',
+        ],
+        [
+            3,
+            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
+            'u sd f',
+        ],
+        [
+            4,
+            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
+            'sdlkfjasd ',
+        ],
+    ]
+    ctx.obj['simple_table'].print(data, column_settings=[
+        {
+            'styles': {
+                'fg': 'bright_red',
+                'bold': True,
+            },
+        },
+        {
+            'styles': {
+                'fg': 'bright_yellow',
+            },
+        },
+        {
+            'styles': {
+                'fg': 'bright_green',
+            },
+        },
+    ], width='full')

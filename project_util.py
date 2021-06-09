@@ -1,4 +1,5 @@
 import click
+import os
 
 def project_cmd_show_click_exception(self, file=None):
     if file is None:
@@ -6,12 +7,19 @@ def project_cmd_show_click_exception(self, file=None):
     click.secho('ERROR: ', fg='red', bold=True, nl=False, file=file)
     click.echo('{}'.format(self.format_message()), file=file)
 
-
 def debug(message):
     click.secho(message, fg='yellow')
 
+def format_file_size(size, suffix='B'):
+    for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
+        if abs(size) < 1024.0:
+            return '{:.1f} {}{}'.format(size, unit, suffix)
+        size /= 1024.0
 
-def simple_table(left, right, left_width=20, left_color='white', right_color='white'):
-    left_chars = len(left)
-    right_chars = len(right)
-    click
+    return '{:.1f}{}{}'.format(size, 'Y', suffix)
+
+def get_file_size(filename, formatted=False):
+    size = os.path.getsize(filename)
+    if formatted:
+        return format_file_size(size)
+    return size
