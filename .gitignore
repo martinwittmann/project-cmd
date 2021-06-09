@@ -1,5 +1,5 @@
 venv/
 .idea/
 __pycache__/
-project_cmd.egg-info
+project.egg-info/
 *.pyc

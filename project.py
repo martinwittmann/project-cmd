@@ -14,7 +14,7 @@ import project_ssh
 # Monkey patching click.ClickException to better format error messages.
 click.ClickException.show = project_util.project_cmd_show_click_exception
 
-VERSION = '0.1'
+VERSION = '0.4'
 COLOR_SUCCESS = 'bright_green'
 COLOR_ERROR = 'bright_red'
 

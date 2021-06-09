@@ -1,11 +1,11 @@
 from setuptools import setup
 
 setup(
-    name='project-cmd',
+    name='project',
     version='0.1',
     python_requires='>=3',
     py_modules=[
-        'project_cmd',
+        'project',
         'project_config',
         'project_database',
         'project_hosts',
@@ -22,6 +22,6 @@ setup(
     ],
     entry_points='''
         [console_scripts]
-        project=project_cmd:main
+        project=project:main
     ''',
 )
