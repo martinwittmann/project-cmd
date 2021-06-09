@@ -3,6 +3,7 @@ from setuptools import setup
 setup(
     name='project-cmd',
     version='0.1',
+    python_requires='>=3',
     py_modules=[
         'project_cmd',
         'project_config',
