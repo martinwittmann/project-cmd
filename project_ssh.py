@@ -2,6 +2,7 @@ import os
 import click
 from fabric import Connection, transfer
 from fabric_monkey_patches import fabric_get_file, fabric_put_file
+import datetime
 
 from project_util import format_file_size
 
@@ -52,7 +53,7 @@ class ProjectSsh:
         elif type == 'states':
             return os.path.join(self.config.get('global.servers.default.path'), project_id, REMOTE_DIR_STATES)
 
-    def list_remote_files(self, dir, pattern=None):
+    def list_remote_files(self, dir, pattern=None, include_details=False):
         try:
             if not self.connected:
                 self.connect()
@@ -68,8 +69,24 @@ class ProjectSsh:
                 files = ls_result.stdout.strip().split('\n')
                 if (self.verbosity > 0):
                     click.echo(ls_result.stdout.strip())
-                files = [os.path.basename(file) for file in files]
-                return files
+
+                result = []
+                if include_details:
+                    for file in files:
+                        stat_command = 'stat -c "%s,%Y" {}'.format(file)
+                        stat_result = self.connection.run(stat_command, hide=True, warn=True)
+                        file_data = {
+                            'name': os.path.basename(file),
+                        }
+                        if stat_result.ok:
+                            stat = stat_result.stdout.strip().split(',')
+                            file_data['size'] = format_file_size(stat[0])
+                            dump_date = datetime.datetime.fromtimestamp(int(stat[1]))
+                            file_data['date'] = dump_date.strftime('%Y-%m-%d %H:%M')
+                        result.append(file_data)
+                else:
+                    result = [os.path.basename(file) for file in files]
+                return result
             else:
                 if (self.verbosity > 0):
                     click.echo(ls_result.stderr.strip())
@@ -90,7 +107,7 @@ class ProjectSsh:
         else:
             file_pattern = pattern + dump_extension
 
-        return self.list_remote_files(dir, pattern=file_pattern)
+        return self.list_remote_files(dir, pattern=file_pattern, include_details=True)
 
     def put_file(self, local_filename, remote_filename):
         file_size = os.path.getsize(local_filename)

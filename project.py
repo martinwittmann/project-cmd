@@ -265,9 +265,30 @@ def dumps_ls(ctx, pattern, verbose):
     remote_dumps = ctx.obj['ssh'].get_dumps(project_id)
     if len(remote_dumps) < 1:
         click.secho('[No database dumps found]', fg='bright_yellow')
-    for dump in remote_dumps:
-        click.echo('- {}'.format(dump))
-
+    else:
+        table = list(map(lambda d: [d['name'], d['date'], d['size']], remote_dumps))
+        ctx.obj['simple_table'].print(
+            table,
+            border_styles={
+                'fg': (100, 100, 100),
+            },
+            column_settings=[
+                {},
+                {
+                    'align': 'center',
+                },
+                {
+                    'align': 'right',
+                },
+            ],
+            headers=[
+                'Name',
+                'Date',
+                'Size',
+            ],
+            width='full',
+            show_horizontal_lines=False,
+        )
 
 @dumps.command(name='rm')
 @click.argument('name', type=click.STRING, autocompletion=_get_local_dumps)

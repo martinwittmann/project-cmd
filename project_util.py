@@ -11,6 +11,7 @@ def debug(message):
     click.secho(message, fg='yellow')
 
 def format_file_size(size, suffix='B'):
+    size = int(size)
     for unit in ['', 'k', 'M', 'G', 'T', 'P', 'E', 'Z']:
         if abs(size) < 1024.0:
             return '{:.1f} {}{}'.format(size, unit, suffix)
