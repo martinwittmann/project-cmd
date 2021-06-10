@@ -1,17 +1,10 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='project',
     version='0.1',
     python_requires='>=3',
-    py_modules=[
-        'project',
-        'project_config',
-        'project_database',
-        'project_hosts',
-        'project_simple_table',
-        'project_util',
-    ],
+    packages=find_packages(),
     install_requires=[
         'Click',
         'click_completion',
@@ -20,8 +13,9 @@ setup(
         'python_hosts',
         'fabric',
     ],
-    entry_points='''
-        [console_scripts]
-        project=project:main
-    ''',
+    entry_points={
+        'console_scripts': [
+            'project = project:main',
+        ],
+    },
 )

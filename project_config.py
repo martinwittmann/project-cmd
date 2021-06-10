@@ -3,7 +3,7 @@ import os
 import sys
 import pathlib
 import yaml
-from project_util import project_cmd_show_click_exception, debug
+from util import project_cmd_show_click_exception, debug
 from dotenv import dotenv_values
 
 class ConfigKeyNotFoundException(Exception):
@@ -47,7 +47,7 @@ class ProjectConfig:
             debug('Searching project config...')
         while not result:
             filename = os.path.join(path, CONFIG_FILENAME)
-            if self.verbose > 1:
+            if self.verbose > 0:
                 debug('Searching project config at {}'.format(filename))
             if os.path.isfile(filename):
                 if self.verbose > 0:

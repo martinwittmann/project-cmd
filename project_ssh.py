@@ -4,7 +4,7 @@ from fabric import Connection, transfer
 from fabric_monkey_patches import fabric_get_file, fabric_put_file
 import datetime
 
-from project_util import format_file_size
+from util import format_file_size
 
 transfer.Transfer.get = fabric_get_file
 transfer.Transfer.put = fabric_put_file

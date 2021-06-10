@@ -24,19 +24,6 @@ DEFAULT_COLUMN_SETTINGS = {
 }
 
 class SimpleTable:
-    def __init__(self, left_width=10):
-        self.left_width = left_width
-
-    def print_table(self, data, left_color='white', right_color='white',
-                    min_distance=1):
-        for row in data:
-            if len(row['left']) + min_distance > self.left_width:
-                self.left_width = len(row['left']) + min_distance
-
-        for row in data:
-            click.secho(row['left'].ljust(self.left_width, ' '), fg=left_color, nl=False)
-            click.secho(row['right'], fg=right_color)
-
 
     def print(self, data, column_settings=[], width='auto', border_styles={}, show_horizontal_lines=True, show_vertical_lines=True, headers=[]):
         (terminal_width, terminal_height) = shutil.get_terminal_size()
@@ -105,9 +92,10 @@ class SimpleTable:
                     between_line += ''.rjust(column_width, BORDER_HORIZONTAL)
                     last_line += ''.rjust(column_width, BORDER_HORIZONTAL)
 
-                    header_content = headers[column_index]
-                    header_line += click.style(BORDER_VERTICAL, **border_styles)
-                    header_line += click.style(header_content.ljust(column_width, ' '), bold=True)
+                    if show_header:
+                        header_content = headers[column_index]
+                        header_line += click.style(BORDER_VERTICAL, **border_styles)
+                        header_line += click.style(header_content.ljust(column_width, ' '), bold=True)
                     after_header_line += ''.rjust(column_width, BORDER_HORIZONTAL) + T_ALL
                     if column_index < len(row):
                         if show_vertical_lines:

@@ -2,7 +2,7 @@ import click
 import datetime
 import glob
 import os
-from project_util import get_file_size
+from util import get_file_size
 import tarfile
 
 

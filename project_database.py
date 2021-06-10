@@ -3,7 +3,7 @@ import os.path
 import subprocess
 from os import path, listdir
 import glob
-from project_util import get_file_size
+from util import get_file_size
 
 DUMPS_DIR = 'dumps'
 

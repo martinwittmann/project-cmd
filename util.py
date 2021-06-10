@@ -1,5 +1,7 @@
 import click
 import os
+from constants import colors
+
 
 def project_cmd_show_click_exception(self, file=None):
     if file is None:
@@ -7,8 +9,10 @@ def project_cmd_show_click_exception(self, file=None):
     click.secho('ERROR: ', fg='red', bold=True, nl=False, file=file)
     click.echo('{}'.format(self.format_message()), file=file)
 
+
 def debug(message):
     click.secho(message, fg='yellow')
+
 
 def format_file_size(size, suffix='B'):
     size = int(size)
@@ -19,8 +23,20 @@ def format_file_size(size, suffix='B'):
 
     return '{:.1f}{}{}'.format(size, 'Y', suffix)
 
+
 def get_file_size(filename, formatted=False):
     size = os.path.getsize(filename)
     if formatted:
         return format_file_size(size)
     return size
+
+
+def output_error(message, prefix='ERROR'):
+    click.secho('{} '.format(prefix), fg=colors.error, bold=True, nl=False)
+    click.echo(message)
+
+
+def output_success(message, prefix='OK'):
+    click.secho('{} '.format(prefix), fg=colors.success, bold=True, nl=False)
+    click.echo(message)
+
