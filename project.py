@@ -262,7 +262,7 @@ def dumps_ls(ctx, pattern, verbose):
     if verbose:
         ctx.obj['ssh'].set_verbosity(1)
     ctx.obj['ssh'].connect()
-    remote_dumps = ctx.obj['ssh'].get_dumps(project_id)
+    remote_dumps = ctx.obj['ssh'].get_dumps(project_id, include_details=True)
     if len(remote_dumps) < 1:
         click.secho('[No database dumps found]', fg='bright_yellow')
     else:
@@ -302,6 +302,21 @@ def dumps_rm_local(ctx, name):
         os.remove(filename)
         click.secho('DONE ', fg=COLOR_SUCCESS, bold=True, nl=False)
         click.echo('Deleted database dump "{}".'.format(basename))
+    except Exception as e:
+        click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+        click.echo(e)
+
+@dumps.command(name='rrm')
+@click.argument('name', type=click.STRING, autocompletion=_get_remote_dumps)
+@click.pass_context
+def dumps_rm_remote(ctx, name):
+    try:
+        ctx.obj['config'].setup_project()
+        project_id = ctx.obj['config'].get('id')
+        ctx.obj['ssh'].connect()
+        ctx.obj['ssh'].delete_dump(project_id, name)
+        click.secho('DONE ', fg=COLOR_SUCCESS, bold=True, nl=False)
+        click.echo('Deleted remote database dump "{}".'.format(name))
     except Exception as e:
         click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
         click.echo(e)

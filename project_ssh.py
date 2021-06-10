@@ -96,7 +96,7 @@ class ProjectSsh:
             click.echo(str(e))
             return []
 
-    def get_dumps(self, project_id, pattern='*'):
+    def get_dumps(self, project_id, pattern='*', include_details=False):
         if not self.connected:
             self.connect()
 
@@ -107,7 +107,8 @@ class ProjectSsh:
         else:
             file_pattern = pattern + dump_extension
 
-        return self.list_remote_files(dir, pattern=file_pattern, include_details=True)
+        return self.list_remote_files(dir, pattern=file_pattern,
+                                      include_details=include_details)
 
     def put_file(self, local_filename, remote_filename):
         file_size = os.path.getsize(local_filename)
@@ -161,3 +162,24 @@ class ProjectSsh:
             self.connection.get(local=local_filename, remote=remote_filename,
                                 callback=progress)
 
+    def remote_file_exists(self, filename):
+        stat_command = 'stat {}'.format(filename)
+        result = self.connection.run(stat_command, hide=True, warn=True)
+        return result.ok
+
+    def delete_remote_file(self, filename):
+        command = 'rm {}'.format(filename)
+        result = self.connection.run(command, hide=True, warn=True)
+        if result.ok:
+            return True
+        raise Exception('Error deleting file "{}": {}'.format(filename, result.stderr.strip()))
+
+
+    def delete_dump(self, project_id, name):
+        remote_dir = self.get_remote_dir(project_id, 'dumps')
+        remote_filename = os.path.join(remote_dir, name)
+
+        if not self.remote_file_exists(remote_filename):
+            raise Exception('Can\'t delete remote database dump {}: File not found.'.format(name))
+
+        self.delete_remote_file(remote_filename)
