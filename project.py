@@ -80,7 +80,7 @@ def main(ctx, verbose, vverbose, version, project=None):
         ctx.invoke(info)
 
 # Quick and dirty alias for projects
-@main.command()
+@main.command(hidden=True)
 @click.pass_context
 @click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
 def l(ctx, only_ids):
@@ -90,6 +90,7 @@ def l(ctx, only_ids):
 @click.pass_context
 @click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
 def projects(ctx, only_ids):
+    """(p) List all registered projects symlinked from ~/.project/projects."""
     projects = ctx.obj['config'].get_all_projects()
 
     if (only_ids):
@@ -100,14 +101,16 @@ def projects(ctx, only_ids):
         click.echo('Found {} projects:'.format(len(table)))
         ctx.obj['simple_table'].print_table(table, right_color='bright_yellow')
 
-@main.command()
+@main.command(hidden=True)
 @click.pass_context
 def i(ctx):
     return ctx.invoke(info)
 
+
 @main.command()
 @click.pass_context
 def info(ctx):
+    """(i) Show information about the current project."""
     _project_setup(ctx)
     ctx.obj['config'].setup_project()
     click.echo('Found project at {}:'.format(ctx.obj['config'].project_dir))
@@ -129,34 +132,36 @@ def info(ctx):
         })
     ctx.obj['simple_table'].print_table(data, right_color='bright_yellow')
 
-@main.command()
+
+@main.command(hidden=True)
 @click.pass_context
 def s(ctx):
     return ctx.invoke(status)
 
+
 @main.command()
 @click.pass_context
 def status(ctx):
-    """Checking the running state of the current project."""
+    """(s) Output the running state of the current project."""
     _project_setup(ctx)
     ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
         project_util.debug('Running script status')
-    command = ctx.obj['config'].get('scripts.status')
-    #subprocess.run(command.split(' '))
+    #command = ctx.obj['config'].get('scripts.status')
     subprocess.run(['sudo', 'ls', '-la'])
 
-@main.command()
+@main.command(hidden=True)
 @click.argument('script')
 @click.pass_context
 def x(ctx, script):
     return ctx.invoke(run, script)
 
+
 @main.command()
 @click.argument('script')
 @click.pass_context
 def run(ctx, script):
-    """Execute a script defined in project.yml."""
+    """(x) Execute a script defined in project.yml."""
     _project_setup(ctx)
     ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
@@ -165,16 +170,18 @@ def run(ctx, script):
     subprocess.run(command.split(' '))
 
 
-@main.command()
+@main.command(hidden=True)
 @click.pass_context
 @click.argument('name', autocompletion=_project_names)
 def c(ctx, name):
     return ctx.invoke(cd, name=name)
 
+
 @main.command()
 @click.pass_context
 @click.argument('name', autocompletion=_project_names)
 def cd(ctx, name):
+    """(c) Change directory to the given project."""
     projects = ctx.obj['config'].get_all_projects()
     for project in projects:
         if project['id'] == name:
@@ -187,14 +194,14 @@ def cd(ctx, name):
 @main.group(invoke_without_command=True)
 @click.pass_context
 def dumps(ctx):
-    """Create, import, push and download database dumps for the current project."""
+    """(d) Manage database dumps for the current project."""
     _project_setup(ctx)
     ctx.obj['config'].setup_project()
 
     if ctx.invoked_subcommand is None:
         ctx.invoke(dumps_ls)
 
-@main.command()
+@main.command(hidden=True)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_local_dumps)
 @click.pass_context
@@ -203,19 +210,19 @@ def d(ctx, pattern, verbose):
     ctx.obj['config'].setup_project()
     ctx.invoke(dumps_ls, pattern=pattern, verbose=verbose)
 
-@main.command()
+@main.command(hidden=True)
 @click.option('-n', '--name', help='Name of the database dump being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
 @click.pass_context
 def dd(ctx, name):
     _project_setup(ctx)
     ctx.obj['config'].setup_project()
-    ctx.invoke(dump, name=name)
+    ctx.invoke(create_dump, name=name)
 
 @dumps.command()
 @click.option('-n', '--name', help='Name of the database dump being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
 @click.pass_context
-def dump(ctx, name):
-    """Dumps the project's database."""
+def create_dump(ctx, name):
+    """(dc) Dumps the project's database."""
     click.echo('Dumping database...')
     try:
         filename = ctx.obj['db'].dump(name)
@@ -230,7 +237,7 @@ def dump(ctx, name):
 @click.argument('pattern', default='*', type=click.STRING, autocompletion=_get_local_dumps)
 @click.pass_context
 def dumps_ls(ctx, pattern, verbose):
-    """Lists the project's local database dumps."""
+    """(d) Lists the project's local database dumps."""
     project_id = ctx.obj['config'].get('id')
     project_name = ctx.obj['config'].get('name')
     click.secho('[{}]'.format(project_name), fg='green', bold=True)
@@ -302,6 +309,7 @@ def dumps_ls(ctx, pattern, verbose):
 @click.argument('name', type=click.STRING, autocompletion=_get_local_dumps)
 @click.pass_context
 def dumps_rm_local(ctx, name):
+    """(dr) Delete local database dump."""
     try:
         filename = ctx.obj['db'].get_dump_filename(name)
         if filename is None or not os.path.isfile(filename):
@@ -318,6 +326,7 @@ def dumps_rm_local(ctx, name):
 @click.argument('name', type=click.STRING, autocompletion=_get_remote_dumps)
 @click.pass_context
 def dumps_rm_remote(ctx, name):
+    """(drr) Delete remote database dump from server."""
     try:
         ctx.obj['config'].setup_project()
         project_id = ctx.obj['config'].get('id')
@@ -335,6 +344,7 @@ def dumps_rm_remote(ctx, name):
 @click.argument('dump', type=click.STRING, autocompletion=_get_local_dumps)
 @click.pass_context
 def push_dump(ctx, dump, verbose):
+    """(du) Push/upload database dump to server."""
     ctx.obj['config'].setup_project()
     project_id = ctx.obj['config'].get('id')
     local_dump = ctx.obj['db'].get_dump_filename(dump)
@@ -357,6 +367,7 @@ def push_dump(ctx, dump, verbose):
 @click.argument('dump', type=click.STRING, autocompletion=_get_remote_dumps)
 @click.pass_context
 def pull_dump(ctx, dump, verbose):
+    """(dd) Pull/download database dump from server."""
     ctx.obj['config'].setup_project()
     project_id = ctx.obj['config'].get('id')
     local_dump = ctx.obj['db'].get_dump_filename(dump)
@@ -376,12 +387,11 @@ def pull_dump(ctx, dump, verbose):
 @main.group(invoke_without_command=True)
 @click.pass_context
 def hosts(ctx):
-    """Manage hosts/dns entries for localhost."""
-
+    """(h) Manage hosts/dns entries for localhost."""
     if ctx.invoked_subcommand is None:
         ctx.invoke(hosts_ls)
 
-@main.command()
+@main.command(hidden=True)
 @click.pass_context
 @click.option('-v', '--verbose', is_flag=True,
               help='Show more information about hostnames.')
@@ -417,7 +427,7 @@ def hosts_ls(ctx, verbose):
             click.secho(name, fg=color)
 
 
-@main.command()
+@main.command(hidden=True)
 @click.pass_context
 @click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',
@@ -433,6 +443,7 @@ def ha(ctx, ip, ipv6, hostname):
               default='127.0.0.1')
 @click.argument('hostname', type=click.STRING)
 def hosts_add(ctx, ip, ipv6, hostname):
+    """(ha) Add hostname to the local hosts file."""
     if not os.geteuid() == 0:
         cmd = ['sudo']
         for part in sys.argv:
@@ -460,7 +471,7 @@ def hosts_add(ctx, ip, ipv6, hostname):
         click.echo('')
 
 
-@main.command()
+@main.command(hidden=True)
 @click.pass_context
 @click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',
@@ -476,6 +487,7 @@ def hr(ctx, ip, ipv6, hostname):
               default='127.0.0.1')
 @click.argument('hostname', type=click.STRING)
 def hosts_rm(ctx, ip, ipv6, hostname):
+    """(hr) Remove hostname from the local hosts file."""
     if not os.geteuid() == 0:
         cmd = ['sudo']
         for part in sys.argv:
@@ -503,11 +515,22 @@ def hosts_rm(ctx, ip, ipv6, hostname):
         click.echo('')
 
 
+@main.command(hidden=True)
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('pattern', default='*', type=click.STRING,
+                autocompletion=_get_local_archives)
+@click.pass_context
+def a(ctx, verbose, pattern):
+    _project_setup(ctx)
+    ctx.obj['config'].setup_project()
+
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(list_local_archives)
 
 @main.group(invoke_without_command=True)
 @click.pass_context
 def archives(ctx):
-    """Backup, restore, push and download files/paths for the current project."""
+    """(a) Manage archives for the current project."""
     _project_setup(ctx)
     ctx.obj['config'].setup_project()
 
@@ -518,7 +541,7 @@ def archives(ctx):
 @click.option('-n', '--name', help='Name of the archive being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
 @click.pass_context
 def create_archive(ctx, name):
-    """Create tar.gz files of paths from 'archive' in projct.yml."""
+    """(ac) Create tar.gz files of paths declared in 'archive' in project.yml."""
     click.echo('Creating archive...')
     ctx.obj['config'].setup_project()
     try:
@@ -533,7 +556,7 @@ def create_archive(ctx, name):
 @click.argument('name', type=click.STRING, autocompletion=_get_local_archives)
 @click.pass_context
 def extract_archive(ctx, name):
-    """Extract an archive, possibly overwriting local files."""
+    """(ax) Extract an archive, possibly overwriting local files."""
     click.echo('Extracting archive...')
     ctx.obj['config'].setup_project()
     try:
@@ -551,7 +574,7 @@ def extract_archive(ctx, name):
                 autocompletion=_get_local_archives)
 @click.pass_context
 def list_local_archives(ctx, pattern, verbose):
-    """Lists the project's local archives."""
+    """(a) Lists the project's local archives."""
     project_name = ctx.obj['config'].get('name')
     click.secho('[{}]'.format(project_name), fg='green', bold=True)
     click.echo()
