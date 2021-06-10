@@ -25,7 +25,7 @@ class Database:
         return path.join(self.config.dot_project_dir, DUMPS_DIR, name)
 
     def get_dump_command(self):
-        command = self.config.get('db.dump')
+        command = self.config.get('scripts.dump')
         for key, value in self.config.env.items():
             command = command.replace('${}'.format(key), value)
         return command

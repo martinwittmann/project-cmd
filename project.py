@@ -4,6 +4,8 @@ import time
 
 import click
 import subprocess
+
+import project_archives
 import project_config
 import project_hosts
 import project_database
@@ -36,6 +38,10 @@ def _project_names(ctx, args, incomplete):
     projects = ctx.obj['config'].get_all_projects()
     return [p['id'] for p in projects if p['id'].startswith(incomplete)]
 
+def _get_local_archives(ctx, args, incomplete):
+    _project_setup(ctx)
+    archives = ctx.obj['archives'].get_local_archives()
+    return [p['id'] for p in projects if p['id'].startswith(incomplete)]
 
 def _project_setup(ctx, project=None):
     if ctx.obj is None:
@@ -47,6 +53,7 @@ def _project_setup(ctx, project=None):
     ctx.obj['simple_table'] = project_simple_table.SimpleTable()
     ctx.obj['db'] = project_database.Database(ctx.obj['config'])
     ctx.obj['ssh'] = project_ssh.ProjectSsh(ctx.obj['config'])
+    ctx.obj['archives'] = project_archives.Archives(ctx.obj['config'])
 
 
 @click.group(invoke_without_command=True)
@@ -227,7 +234,7 @@ def dumps_ls(ctx, pattern, verbose):
     project_name = ctx.obj['config'].get('name')
     click.secho('[{}]'.format(project_name), fg='green', bold=True)
     click.echo()
-    click.echo('Local database dumps:'.format(click.format_filename(project_name)))
+    click.echo('Local database dumps:')
     local_dumps = ctx.obj['db'].get_local_dumps(pattern, include_details=True)
     if len(local_dumps) < 1:
         click.secho('  [No database dumps found]', fg='bright_yellow')
@@ -496,51 +503,68 @@ def hosts_rm(ctx, ip, ipv6, hostname):
 
 
 
-@main.command()
+@main.group(invoke_without_command=True)
 @click.pass_context
-def test(ctx):
+def archives(ctx):
+    """Backup, restore, push and download files/paths for the current project."""
     _project_setup(ctx)
-    data = [
-        [
-            1,
-            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
-            'Not ok',
-        ],
-        [
-            2,
-            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
-            'asa sds as',
-        ],
-        [
-            3,
-            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
-            'u sd f',
-        ],
-        [
-            4,
-            'https://sdfasdfasdfasd.com/lsdjfasd?sdfs',
-            'sdlkfjasd ',
-        ],
-    ]
-    ctx.obj['simple_table'].print(data, column_settings=[
-        {
-            'styles': {
-                'fg': 'bright_red',
-                'bold': True,
+    ctx.obj['config'].setup_project()
+
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(list_local_archives)
+
+@archives.command(name='create')
+@click.option('-n', '--name', help='Name of the archive being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
+@click.pass_context
+def create_archive(ctx, name):
+    """Create tar.gz files of paths from 'archive' in projct.yml."""
+    click.echo('Creating archive...')
+    ctx.obj['config'].setup_project()
+    try:
+        filename = ctx.obj['archives'].create_archive(name)
+        click.secho('OK ', fg=COLOR_SUCCESS, bold=True, nl=False)
+        click.secho('Created archive {}.'.format(filename))
+    except Exception as e:
+        click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+        click.secho('Error creating archive: {}'.format(e))
+
+
+@archives.command(name='ls')
+@click.option('-v', '--verbose', is_flag=True)
+@click.argument('pattern', default='*', type=click.STRING,
+                autocompletion=_get_local_archives)
+@click.pass_context
+def list_local_archives(ctx, pattern, verbose):
+    """Lists the project's local archives."""
+    project_name = ctx.obj['config'].get('name')
+    click.secho('[{}]'.format(project_name), fg='green', bold=True)
+    click.echo()
+    click.echo('Local archives:')
+    local_archives = ctx.obj['archives'].get_local_archives(pattern, include_details=True)
+    if len(local_archives) < 1:
+        click.secho('  [No archives found]', fg='bright_yellow')
+
+    else:
+        table = list(map(lambda d: [d['name'], d['date'], d['size']], local_archives))
+        ctx.obj['simple_table'].print(
+            table,
+            border_styles={
+                'fg': (100, 100, 100),
             },
-        },
-        {
-            'styles': {
-                'fg': 'bright_yellow',
-            },
-            'align': 'center',
-        },
-        {
-            'styles': {
-                'fg': 'bright_green',
-            },
-            'align': 'right',
-        },
-    ], border_styles={
-        'fg': (100, 100, 100),
-    })
+            column_settings=[
+                {},
+                {
+                    'align': 'center',
+                },
+                {
+                    'align': 'right',
+                },
+            ],
+            headers=[
+                'Name',
+                'Date',
+                'Size',
+            ],
+            width='full',
+            show_horizontal_lines=False,
+        )
