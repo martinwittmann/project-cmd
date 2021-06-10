@@ -36,8 +36,7 @@ class Archives:
     def create_archive(self, name):
         today = datetime.datetime.now()
         name = name.replace('%d', today.strftime('%Y-%m-%d--%H-%M-%S'))
-        filename = os.path.join(self.config.dot_project_dir, ARCHIVES_DIR, name)
-        filename += ARCHIVES_EXT
+        filename = self.get_filename(name, add_extension=True)
 
         paths_to_archive = self.config.get('archive')
 
@@ -47,8 +46,16 @@ class Archives:
         archive.close()
         return os.path.basename(filename)
 
-    def get_archive_command(self):
-        command = self.config.get('scripts.dump')
-        for key, value in self.config.env.items():
-            command = command.replace('${}'.format(key), value)
-        return command
+    def get_filename(self, archive_name, add_extension=False):
+        filename = os.path.join(self.config.dot_project_dir, ARCHIVES_DIR, archive_name)
+        return filename + ARCHIVES_EXT if add_extension else filename
+
+
+    def extract_archive(self, name):
+        filename = self.get_filename(name)
+        if not os.path.isfile(filename):
+            raise Exception('Cannot extract archive "{}": File not found.'.format(name))
+
+        archive = tarfile.open(filename, 'r:gz')
+        project_path = self.config.project_dir
+        archive.extractall(project_path)

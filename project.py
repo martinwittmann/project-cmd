@@ -40,8 +40,9 @@ def _project_names(ctx, args, incomplete):
 
 def _get_local_archives(ctx, args, incomplete):
     _project_setup(ctx)
-    archives = ctx.obj['archives'].get_local_archives()
-    return [p['id'] for p in projects if p['id'].startswith(incomplete)]
+    ctx.obj['config'].setup_project()
+    archives = ctx.obj['archives'].get_local_archives(incomplete + '*')
+    return archives
 
 def _project_setup(ctx, project=None):
     if ctx.obj is None:
@@ -527,6 +528,21 @@ def create_archive(ctx, name):
     except Exception as e:
         click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
         click.secho('Error creating archive: {}'.format(e))
+
+@archives.command(name='extract')
+@click.argument('name', type=click.STRING, autocompletion=_get_local_archives)
+@click.pass_context
+def extract_archive(ctx, name):
+    """Extract an archive, possibly overwriting local files."""
+    click.echo('Extracting archive...')
+    ctx.obj['config'].setup_project()
+    try:
+        filename = ctx.obj['archives'].extract_archive(name)
+        click.secho('OK ', fg=COLOR_SUCCESS, bold=True, nl=False)
+        click.secho('Extracted archive {}.'.format(filename))
+    except Exception as e:
+        click.secho('ERROR ', fg=COLOR_ERROR, bold=True, nl=False)
+        click.echo(e)
 
 
 @archives.command(name='ls')
