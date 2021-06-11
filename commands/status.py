@@ -1,5 +1,5 @@
 import click
-from context import init_context
+import context
 import util
 import subprocess
 
@@ -14,7 +14,7 @@ def status_alias(ctx):
 @click.pass_context
 def status(ctx):
     """(s) Output the running state of the current project."""
-    init_context(ctx)
+    context.init_project(ctx)
     ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
         util.debug('Running script status')

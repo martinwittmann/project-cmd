@@ -1,6 +1,7 @@
 import click
+
+import context
 from completions import project_names
-from context import init_context
 import util
 
 
@@ -16,7 +17,8 @@ def change_directory_alias(ctx, name):
 @click.argument('name', autocompletion=project_names)
 def change_directory(ctx, name):
     """(c) Change directory to the given project."""
-    init_context(ctx)
+
+    context.init(ctx)
     projects = ctx.obj['config'].get_all_projects()
     for project in projects:
         if project['id'] == name:

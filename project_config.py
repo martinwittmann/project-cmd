@@ -28,7 +28,7 @@ class ProjectConfig:
         self.verbose = verbose
         self.home_dir = str(pathlib.Path.home())
 
-    def setup_project(self, project=None):
+    def init_project_data(self, project=None):
         self.config_file = self.get_config_location(project)
         self.project_dir = os.path.dirname(self.config_file)
         self.dot_project_dir = os.path.join(self.project_dir, DOT_PROJECT_DIR)

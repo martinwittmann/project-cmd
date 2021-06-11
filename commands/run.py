@@ -1,5 +1,5 @@
 import click
-from context import init_context
+import context
 import subprocess
 import util
 
@@ -16,7 +16,8 @@ def run_script_alias(ctx, script):
 @click.pass_context
 def run_script(ctx, script):
     """(x) Execute a script defined in project.yml."""
-    init_context(ctx)
+    context.init_project(ctx)
+
     ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
         util.debug('Running script {}'.format(script))

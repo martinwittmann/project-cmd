@@ -8,6 +8,7 @@ from constants import colors
 @click.pass_context
 def list_archives(ctx, pattern):
     """(a) Lists the project's archives."""
+
     project_name = ctx.obj['config'].get('name')
     click.secho('[{}]'.format(project_name), fg=colors.success, bold=True)
     click.echo()

@@ -1,5 +1,5 @@
 import click
-from context import init_context
+import context
 from constants import colors
 
 @click.command(name='i', hidden=True)
@@ -11,8 +11,8 @@ def info_alias(ctx):
 @click.pass_context
 def info(ctx):
     """(i) Show information about the current project."""
-    init_context(ctx)
-    ctx.obj['config'].setup_project()
+    context.init_project(ctx)
+
     click.echo('Found project at {}:'.format(ctx.obj['config'].project_dir))
     data = [
         [

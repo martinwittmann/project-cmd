@@ -5,8 +5,8 @@ import util
 @click.pass_context
 def create_archive(ctx, name):
     """(ac) Create tar.gz files of paths declared in 'archive' in project.yml."""
+
     click.echo('Creating archive...')
-    ctx.obj['config'].setup_project()
     try:
         filename = ctx.obj['archives'].create_archive(name)
         util.output_success('Created archive {}.'.format(filename))

@@ -1,10 +1,11 @@
 import click
 from constants import colors
 
+@click.command(name='ls')
 @click.pass_context
 @click.option('-v', '--verbose', is_flag=True,
               help='Show more information about hostnames.')
-def hosts_ls(ctx, verbose):
+def list_hosts(ctx, verbose):
     if verbose:
         click.echo('Using hosts file at ', nl=False)
         click.echo(ctx.obj['hosts'].get_hosts_file_location())
@@ -26,3 +27,10 @@ def hosts_ls(ctx, verbose):
             click.secho('- ', fg='white', nl=False)
             click.secho(name, fg=colors.success)
 
+
+@click.command(name='h', hidden=True)
+@click.pass_context
+@click.option('-v', '--verbose', is_flag=True,
+              help='Show more information about hostnames.')
+def list_hosts_alias(ctx, verbose):
+    return ctx.invoke(list_hosts, verbose=verbose)
