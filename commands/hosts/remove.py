@@ -4,6 +4,7 @@ import subprocess
 import sys
 from constants import colors
 
+@click.command(name='remote')
 @click.pass_context
 @click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',

@@ -65,3 +65,41 @@ main.add_command(commands.delete_local_dump_alias)
 
 dumps.add_command(commands.delete_remote_dump)
 main.add_command(commands.delete_remote_dump_alias)
+
+
+@main.group(invoke_without_command=True)
+@click.pass_context
+def archives(ctx):
+    """(a) Manage archives for the current project."""
+    # All archives commands need a project to work on.
+    context.init_project(ctx)
+
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(commands.list_archives)
+
+archives.add_command(commands.list_archives)
+main.add_command(commands.list_archives_alias)
+
+archives.add_command(commands.create_archive)
+main.add_command(commands.create_archive_alias)
+
+archives.add_command(commands.extract_archive)
+main.add_command(commands.extract_archive_alias)
+
+
+@main.group(invoke_without_command=True)
+@click.pass_context
+def hosts(ctx):
+    """(h) Manage hosts/dns entries for localhost."""
+
+    if ctx.invoked_subcommand is None:
+        ctx.invoke(commands.list_archives)
+
+hosts.add_command(commands.list_hosts)
+main.add_command(commands.list_hosts_alias)
+
+hosts.add_command(commands.add_host)
+main.add_command(commands.add_host_alias)
+
+hosts.add_command(commands.remove_host)
+main.add_command(commands.remove_host_alias)

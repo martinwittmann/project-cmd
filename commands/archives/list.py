@@ -1,8 +1,10 @@
 import click
 from completions import get_local_archives
 from constants import colors
+import context
 
 
+@click.command(name='list')
 @click.argument('pattern', default='*', type=click.STRING,
                 autocompletion=get_local_archives)
 @click.pass_context
@@ -41,3 +43,13 @@ def list_archives(ctx, pattern):
             width='full',
             show_horizontal_lines=False,
         )
+
+
+@click.command(name='a', hidden=True)
+@click.argument('pattern', default='*', type=click.STRING,
+                autocompletion=get_local_archives)
+@click.pass_context
+def list_archives_alias(ctx, pattern):
+    context.init(ctx)
+    context.init_project(ctx)
+    ctx.invoke(list_archives, pattern=pattern)

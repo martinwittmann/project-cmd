@@ -14,3 +14,7 @@ from .dumps.pull import pull_dump, pull_dump_alias
 from .dumps.push import push_dump, push_dump_alias
 from .dumps.remove import delete_local_dump, delete_local_dump_alias
 from .dumps.remote_remove import delete_remote_dump, delete_remote_dump_alias
+
+from .archives.list import list_archives, list_archives_alias
+from .archives.create import create_archive, create_archive_alias
+from .archives.extract import extract_archive, extract_archive_alias

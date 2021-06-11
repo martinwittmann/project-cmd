@@ -1,5 +1,6 @@
 import click
 from constants import colors
+import context
 
 @click.command(name='ls')
 @click.pass_context
@@ -33,4 +34,5 @@ def list_hosts(ctx, verbose):
 @click.option('-v', '--verbose', is_flag=True,
               help='Show more information about hostnames.')
 def list_hosts_alias(ctx, verbose):
+    context.init(ctx)
     return ctx.invoke(list_hosts, verbose=verbose)
