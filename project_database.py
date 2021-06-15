@@ -50,9 +50,9 @@ class Database:
         dumps.reverse()
         return dumps
 
-    def get_dump_filename(self, dump):
+    def get_dump_filename(self, dump, check_existing=False):
         filename = os.path.join(self.config.dot_project_dir, DUMPS_DIR, dump)
-        if not os.path.isfile(filename):
+        if check_existing and not os.path.isfile(filename):
             return None
         return filename
 

@@ -66,6 +66,12 @@ main.add_command(commands.delete_local_dump_alias)
 dumps.add_command(commands.delete_remote_dump)
 main.add_command(commands.delete_remote_dump_alias)
 
+dumps.add_command(commands.rename_local_dump)
+main.add_command(commands.rename_local_dump_alias)
+
+dumps.add_command(commands.rename_remote_dump)
+main.add_command(commands.rename_remote_dump_alias)
+
 
 @main.group(invoke_without_command=True)
 @click.pass_context
@@ -97,6 +103,12 @@ main.add_command(commands.pull_archive_alias)
 
 archives.add_command(commands.delete_remote_archive)
 main.add_command(commands.delete_remote_archive_alias)
+
+archives.add_command(commands.rename_local_archive)
+main.add_command(commands.rename_local_archive_alias)
+
+archives.add_command(commands.rename_remote_archive)
+main.add_command(commands.rename_remote_archive_alias)
 
 
 @main.group(invoke_without_command=True)

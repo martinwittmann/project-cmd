@@ -14,6 +14,8 @@ from .dumps.pull import pull_dump, pull_dump_alias
 from .dumps.push import push_dump, push_dump_alias
 from .dumps.remove import delete_local_dump, delete_local_dump_alias
 from .dumps.remote_remove import delete_remote_dump, delete_remote_dump_alias
+from .dumps.rename import rename_local_dump, rename_local_dump_alias
+from .dumps.remote_rename import rename_remote_dump, rename_remote_dump_alias
 
 from .archives.list import list_archives, list_archives_alias
 from .archives.create import create_archive, create_archive_alias
@@ -22,3 +24,5 @@ from .archives.push import push_archive, push_archive_alias
 from .archives.pull import pull_archive, pull_archive_alias
 from .archives.remove import delete_local_archive, delete_local_archive_alias
 from .archives.remote_remove import delete_remote_archive, delete_remote_archive_alias
+from .archives.rename import rename_local_archive, rename_local_archive_alias
+from .archives.remote_rename import rename_remote_archive, rename_remote_archive_alias

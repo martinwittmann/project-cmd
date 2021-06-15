@@ -141,7 +141,6 @@ class ProjectSsh:
         else:
             file_pattern = pattern + dump_extension
 
-        click.echo(dir)
         return self.list_remote_files(dir, pattern=file_pattern,
                                       include_details=include_details)
 
@@ -246,3 +245,14 @@ class ProjectSsh:
         if result.ok:
             return True
         raise Exception('Error deleting file "{}": {}'.format(filename, result.stderr.strip()))
+
+    def rename_local_file(self, old_name, new_name):
+        os.rename(old_name, new_name)
+
+    def rename_remote_file(self, old_name, new_name):
+        if not self.connected:
+            self.connect()
+
+        command = 'mv "{}" "{}"'.format(old_name, new_name)
+        result = self.connection.run(command, hide=True, warn=True)
+        return result.ok
