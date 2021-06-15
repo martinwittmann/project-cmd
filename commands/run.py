@@ -17,8 +17,6 @@ def run_script_alias(ctx, script):
 def run_script(ctx, script):
     """(x) Execute a script defined in project.yml."""
     context.init_project(ctx)
-
-    ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
         util.debug('Running script {}'.format(script))
     command = ctx.obj['config'].get('scripts.{}'.format(script))

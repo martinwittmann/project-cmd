@@ -16,9 +16,8 @@ GLOBAL_PROJECT_DIR = '.project'
 GLOBAL_CONFIG_FILENAME = 'config.yml'
 
 DEFAULT_PROJECT_CONFIG = {
-    'db': {
-        'dump_file_extension': '.sql',
-    },
+    'dump_file_extension': '.sql',
+    'archive_file_extension': '.tar.gz',
 }
 
 DEFAULT_GLOBAL_CONFIG = {}

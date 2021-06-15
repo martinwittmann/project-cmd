@@ -20,7 +20,7 @@ def push_dump(ctx, dump, verbose):
     basename = os.path.basename(local_dump)
     remote_dumps_dir = ctx.obj['ssh'].get_remote_dir(project_id, 'dumps')
     remote_filename = os.path.join(remote_dumps_dir, basename)
-    ctx.obj['ssh'].put_file(local_dump, remote_filename)
+    ctx.obj['ssh'].upload_file(local_dump, remote_filename)
 
     util.output_success('Uploaded local database dump {} to server.'.format(basename))
 

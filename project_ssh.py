@@ -9,9 +9,9 @@ from util import format_file_size
 transfer.Transfer.get = fabric_get_file
 transfer.Transfer.put = fabric_put_file
 
-REMOTE_DIR_DUMPS = 'dumps'
-REMOTE_DIR_FILES = 'files'
-REMOTE_DIR_STATES = 'states'
+DIRNAME_DUMPS = 'dumps'
+DIRNAME_ARCHIVES = 'archives'
+DIRNAME_STATES = 'states'
 
 class ProjectSsh:
     def __init__(self, config, verbosity=0):
@@ -46,12 +46,46 @@ class ProjectSsh:
     def get_remote_dir(self, project_id, type='project'):
         if type == 'project':
             return os.path.join(self.config.get('global.servers.default.path'), project_id)
+
         elif type == 'dumps':
-            return os.path.join(self.config.get('global.servers.default.path'), project_id, REMOTE_DIR_DUMPS)
-        elif type == 'files':
-            return os.path.join(self.config.get('global.servers.default.path'), project_id, REMOTE_DIR_FILES)
+            return os.path.join(self.config.get('global.servers.default.path'), project_id, DIRNAME_DUMPS)
+
+        elif type == 'archives':
+            return os.path.join(self.config.get('global.servers.default.path'), project_id, DIRNAME_ARCHIVES)
+
         elif type == 'states':
-            return os.path.join(self.config.get('global.servers.default.path'), project_id, REMOTE_DIR_STATES)
+            return os.path.join(self.config.get('global.servers.default.path'), project_id, DIRNAME_STATES)
+
+    def get_local_dir(self, project_id, type='project'):
+        if type == 'project':
+            return os.path.join(self.config.dot_project_dir)
+
+        elif type == 'dumps':
+            return os.path.join(self.config.dot_project_dir, DIRNAME_DUMPS)
+
+        elif type == 'archives':
+            return os.path.join(self.config.dot_project_dir, DIRNAME_ARCHIVES)
+
+        elif type == 'states':
+            return os.path.join(self.config.dot_project_dir, DIRNAME_STATES)
+
+    def get_remote_filename(self, project_id, type, name, check_existing=False):
+        dir = self.get_remote_dir(project_id, type)
+        filename = os.path.join(dir, name)
+
+        if check_existing and not self.remote_file_exists(filename):
+            raise Exception('Project {} / {} / name: Remote file not found.'
+                            .format(project_id, type, name))
+        return filename
+
+    def get_local_filename(self, project_id, type, name, check_existing=False):
+        dir = self.get_local_dir(project_id, type)
+        filename = os.path.join(dir, name)
+
+        if check_existing and not os.path.isfile(filename):
+            raise Exception('Project {} / {} / name: Local file not found.'
+                            .format(project_id, type, name))
+        return filename
 
     def list_remote_files(self, dir, pattern=None, include_details=False):
         try:
@@ -101,7 +135,22 @@ class ProjectSsh:
             self.connect()
 
         dir = self.get_remote_dir(project_id, 'dumps')
-        dump_extension = self.config.get('db.dump_file_extension')
+        dump_extension = self.config.get('dump_file_extension')
+        if dump_extension[0] != '.':
+            file_pattern = '{}.{}'.format(pattern, dump_extension)
+        else:
+            file_pattern = pattern + dump_extension
+
+        click.echo(dir)
+        return self.list_remote_files(dir, pattern=file_pattern,
+                                      include_details=include_details)
+
+    def get_archives(self, project_id, pattern='*', include_details=False):
+        if not self.connected:
+            self.connect()
+
+        dir = self.get_remote_dir(project_id, 'archives')
+        dump_extension = self.config.get('archive_file_extension')
         if dump_extension[0] != '.':
             file_pattern = '{}.{}'.format(pattern, dump_extension)
         else:
@@ -110,7 +159,10 @@ class ProjectSsh:
         return self.list_remote_files(dir, pattern=file_pattern,
                                       include_details=include_details)
 
-    def put_file(self, local_filename, remote_filename):
+    def upload_file(self, local_filename, remote_filename):
+        if not self.connected:
+            self.connect()
+
         file_size = os.path.getsize(local_filename)
         bar_template = 'Uploading {}: [%(bar)s]  %(info)s  %(label)s'.format(
             os.path.basename(local_filename),
@@ -136,14 +188,17 @@ class ProjectSsh:
             self.connection.put(local=local_filename, remote=remote_filename,
                                 callback=progress)
 
-    def get_file(self, remote_filename, local_filename):
+    def download_file(self, remote_filename, local_filename):
+        if not self.connected:
+            self.connect()
+        click.echo(local_filename)
+
         bar_template = 'Downloading {}: [%(bar)s]  %(info)s  %(label)s'.format(
             os.path.basename(local_filename),
         )
+        file_size = self.get_remote_file_size(remote_filename)
         with click.progressbar(
-            # Some random default value. This will be overwritten when progress()
-            # is being called for the first time.
-            length=1000000,
+            length=file_size,
             bar_template=bar_template,
             fill_char=click.style('#', fg='bright_green'),
             empty_char=' '
@@ -163,23 +218,31 @@ class ProjectSsh:
                                 callback=progress)
 
     def remote_file_exists(self, filename):
+        if not self.connected:
+            self.connect()
+
         stat_command = 'stat {}'.format(filename)
         result = self.connection.run(stat_command, hide=True, warn=True)
         return result.ok
 
+    def get_remote_file_size(self, filename):
+        if not self.connected:
+            self.connect()
+
+        stat_command = 'stat -c "%s" {}'.format(filename)
+        result = self.connection.run(stat_command, hide=True, warn=True)
+        if not result.ok:
+            raise Exception('Could not determine file size of remote file {}'
+                            .format(filename))
+
+        return int(result.stdout.strip())
+
     def delete_remote_file(self, filename):
+        if not self.connected:
+            self.connect()
+
         command = 'rm {}'.format(filename)
         result = self.connection.run(command, hide=True, warn=True)
         if result.ok:
             return True
         raise Exception('Error deleting file "{}": {}'.format(filename, result.stderr.strip()))
-
-
-    def delete_dump(self, project_id, name):
-        remote_dir = self.get_remote_dir(project_id, 'dumps')
-        remote_filename = os.path.join(remote_dir, name)
-
-        if not self.remote_file_exists(remote_filename):
-            raise Exception('Can\'t delete remote database dump {}: File not found.'.format(name))
-
-        self.delete_remote_file(remote_filename)

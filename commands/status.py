@@ -15,7 +15,6 @@ def status_alias(ctx):
 def status(ctx):
     """(s) Output the running state of the current project."""
     context.init_project(ctx)
-    ctx.obj['config'].setup_project()
     if ctx.obj['verbosity'] > 0:
         util.debug('Running script status')
     # command = ctx.obj['config'].get('scripts.status')
