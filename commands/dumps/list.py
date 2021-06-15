@@ -3,12 +3,14 @@ import context
 from completions import get_local_dumps
 from constants import colors
 
-@click.command(name='list')
+help_text = """(d) Lists the project's local database dumps."""
+
+
+@click.command(name='list', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('pattern', default='*', type=click.STRING, autocompletion=get_local_dumps)
 @click.pass_context
 def list_dumps(ctx, pattern, verbose):
-    """(d) Lists the project's local database dumps."""
 
     project_id = ctx.obj['config'].get('id')
     project_name = ctx.obj['config'].get('name')
@@ -78,7 +80,7 @@ def list_dumps(ctx, pattern, verbose):
         )
 
 
-@click.command(name='d', hidden=True)
+@click.command(name='d', help=help_text, hidden=True)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('pattern', default='*', type=click.STRING, autocompletion=get_local_dumps)
 @click.pass_context

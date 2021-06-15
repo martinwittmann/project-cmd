@@ -18,5 +18,7 @@ from .dumps.remote_remove import delete_remote_dump, delete_remote_dump_alias
 from .archives.list import list_archives, list_archives_alias
 from .archives.create import create_archive, create_archive_alias
 from .archives.extract import extract_archive, extract_archive_alias
-from .archives.remove import delete_local_archive, delete_local_archive_alias
 from .archives.push import push_archive, push_archive_alias
+from .archives.pull import pull_archive, pull_archive_alias
+from .archives.remove import delete_local_archive, delete_local_archive_alias
+from .archives.remote_remove import delete_remote_archive, delete_remote_archive_alias

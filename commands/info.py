@@ -2,15 +2,12 @@ import click
 import context
 from constants import colors
 
-@click.command(name='i', hidden=True)
-@click.pass_context
-def info_alias(ctx):
-    return ctx.invoke(info)
+help_text = '(i) Show information about the current project.'
 
-@click.command()
+
+@click.command(help=help_text)
 @click.pass_context
 def info(ctx):
-    """(i) Show information about the current project."""
     context.init_project(ctx)
 
     click.echo('Found project at {}:'.format(ctx.obj['config'].project_dir))
@@ -33,3 +30,9 @@ def info(ctx):
     ctx.obj['simple_table'].print(data, border_styles={
         'fg': colors.borders
     })
+
+
+@click.command(name='i', help=help_text, hidden=True)
+@click.pass_context
+def info_alias(ctx):
+    return ctx.invoke(info)

@@ -4,14 +4,16 @@ import subprocess
 import sys
 from constants import colors
 
-@click.command(name='remote')
+help_text = '(hr) Remove hostname from the local hosts file.'
+
+
+@click.command(name='remote', help=help_text)
 @click.pass_context
 @click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',
               default='127.0.0.1')
 @click.argument('hostname', type=click.STRING)
 def remove_host(ctx, ip, ipv6, hostname):
-    """(hr) Remove hostname from the local hosts file."""
     if not os.geteuid() == 0:
         cmd = ['sudo']
         for part in sys.argv:
@@ -38,7 +40,7 @@ def remove_host(ctx, ip, ipv6, hostname):
         click.echo('.')
         click.echo('')
 
-@click.command(name='hr', hidden=True)
+@click.command(name='hr', help=help_text, hidden=True)
 @click.pass_context
 @click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',

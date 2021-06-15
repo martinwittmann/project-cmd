@@ -6,14 +6,16 @@ from constants import colors
 import context
 
 
-@click.command(name='add')
+help_text = """(ha) Add hostname to the local hosts file."""
+
+
+@click.command(name='add', help=help_text)
 @click.pass_context
 @click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',
               default='127.0.0.1')
 @click.argument('hostname', type=click.STRING)
 def add_host(ctx, ip, ipv6, hostname):
-    """(ha) Add hostname to the local hosts file."""
     if not os.geteuid() == 0:
         cmd = ['sudo']
         for part in sys.argv:
@@ -41,7 +43,7 @@ def add_host(ctx, ip, ipv6, hostname):
         click.echo('')
 
 
-@click.command(name='ha', hidden=True)
+@click.command(name='ha', help=help_text, hidden=True)
 @click.pass_context
 @click.option('-6', '--ipv6', help='Add as ipv6 entry.', is_flag=True)
 @click.option('-i', '--ip', help='The ip address for which to add an entry.',

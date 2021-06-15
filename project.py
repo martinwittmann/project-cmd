@@ -92,6 +92,12 @@ main.add_command(commands.delete_local_archive_alias)
 archives.add_command(commands.push_archive)
 main.add_command(commands.push_archive_alias)
 
+archives.add_command(commands.pull_archive)
+main.add_command(commands.pull_archive_alias)
+
+archives.add_command(commands.delete_remote_archive)
+main.add_command(commands.delete_remote_archive_alias)
+
 
 @main.group(invoke_without_command=True)
 @click.pass_context

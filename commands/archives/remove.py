@@ -4,11 +4,13 @@ from completions import get_local_archives
 import os
 import util
 
-@click.command(name='rm')
+help_text = """(ar) Delete local archive."""
+
+
+@click.command(name='rm', help=help_text)
 @click.argument('name', type=click.STRING, autocompletion=get_local_archives)
 @click.pass_context
 def delete_local_archive(ctx, name):
-    """(ar) Delete local archive."""
 
     try:
         filename = ctx.obj['archives'].get_filename(name)
@@ -20,7 +22,7 @@ def delete_local_archive(ctx, name):
     except Exception as e:
         util.output_error(e)
 
-@click.command(name='ar', hidden=True)
+@click.command(name='ar', help=help_text, hidden=True)
 @click.argument('name', type=click.STRING, autocompletion=get_local_archives)
 @click.pass_context
 def delete_local_archive_alias(ctx, name):

@@ -4,12 +4,14 @@ from completions import get_local_dumps
 import os
 import util
 
-@click.command('push')
+help_text = """(du) Push/upload database dump to server."""
+
+
+@click.command('push', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('dump', type=click.STRING, autocompletion=get_local_dumps)
 @click.pass_context
 def push_dump(ctx, dump, verbose):
-    """(du) Push/upload database dump to server."""
 
     project_id = ctx.obj['config'].get('id')
     local_dump = ctx.obj['db'].get_dump_filename(dump)
@@ -25,7 +27,7 @@ def push_dump(ctx, dump, verbose):
     util.output_success('Uploaded local database dump {} to server.'.format(basename))
 
 
-@click.command(name='du', hidden=True)
+@click.command(name='du', help=help_text, hidden=True)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('dump', type=click.STRING, autocompletion=get_local_dumps)
 @click.pass_context

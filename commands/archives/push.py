@@ -4,12 +4,14 @@ from completions import get_local_archives
 import os
 import util
 
-@click.command('push')
+help_text = """(du) Push/upload archive to server."""
+
+
+@click.command('push', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('archive', type=click.STRING, autocompletion=get_local_archives)
 @click.pass_context
 def push_archive(ctx, archive, verbose):
-    """(du) Push/upload archive to server."""
 
     project_id = ctx.obj['config'].get('id')
     local_archive_filename = ctx.obj['archives'].get_filename(archive)
@@ -25,7 +27,7 @@ def push_archive(ctx, archive, verbose):
     util.output_success('Uploaded local archive {} to server.'.format(basename))
 
 
-@click.command(name='au', hidden=True)
+@click.command(name='au', help=help_text, hidden=True)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('archive', type=click.STRING, autocompletion=get_local_archives)
 @click.pass_context

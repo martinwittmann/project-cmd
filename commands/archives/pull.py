@@ -5,12 +5,14 @@ from completions import get_remote_archives
 import os
 import util
 
-@click.command(name='pull')
+help_text = """(ad) Pull/download archive from server."""
+
+
+@click.command(name='pull', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
 @click.argument('archive', type=click.STRING, autocompletion=get_remote_archives)
 @click.pass_context
 def pull_archive(ctx, archive, verbose):
-    """(ad) Pull/download archive from server."""
 
     try:
         project_id = ctx.obj['config'].get('id')
@@ -33,11 +35,12 @@ def pull_archive(ctx, archive, verbose):
     except Exception as e:
         util.output_error(e)
 
-@click.command(name='dd', hidden=True)
+
+@click.command(name='ad', help=help_text, hidden=True)
 @click.option('-v', '--verbose', is_flag=True)
-@click.argument('dump', type=click.STRING, autocompletion=get_remote_archives)
+@click.argument('archive', type=click.STRING, autocompletion=get_remote_archives)
 @click.pass_context
-def pull_dump_alias(ctx, dump, verbose):
+def pull_archive_alias(ctx, archive, verbose):
     context.init(ctx)
     context.init_project(ctx)
-    ctx.invoke(pull_dump, dump=dump, verbose=verbose)
+    ctx.invoke(pull_archive, archive=archive, verbose=verbose)

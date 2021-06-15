@@ -4,16 +4,17 @@ from completions import get_remote_dumps
 import os
 import util
 
-@click.command(name='rrm')
+help_text = """(drr) Delete remote database dump from server."""
+
+
+@click.command(name='rrm', help=help_text)
 @click.argument('name', type=click.STRING, autocompletion=get_remote_dumps)
 @click.pass_context
 def delete_remote_dump(ctx, name):
-    """(drr) Delete remote database dump from server."""
 
     try:
         project_id = ctx.obj['config'].get('id')
         ctx.obj['ssh'].connect()
-        ctx.obj['ssh'].delete_dump(project_id, name)
         remote_dir = ctx.obj['ssh'].get_remote_dir(project_id, 'dumps')
         remote_filename = os.path.join(remote_dir, name)
 
@@ -26,7 +27,7 @@ def delete_remote_dump(ctx, name):
         util.output_error(e)
 
 
-@click.command(name='drr', hidden=True)
+@click.command(name='drr', help=help_text, hidden=True)
 @click.argument('name', type=click.STRING, autocompletion=get_remote_dumps)
 @click.pass_context
 def delete_remote_dump_alias(ctx, name):

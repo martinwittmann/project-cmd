@@ -1,5 +1,4 @@
 import context
-import click
 
 def get_local_dumps(ctx, args, incomplete):
     context.init(ctx)
@@ -11,8 +10,8 @@ def get_remote_archives(ctx, args, incomplete):
     context.init(ctx)
     context.init_project(ctx)
     project_id = ctx.obj['config'].get('id')
-    dumps = ctx.obj['ssh'].get_archives(project_id, incomplete + '*')
-    return dumps
+    archives = ctx.obj['ssh'].get_archives(project_id, incomplete + '*')
+    return archives
 
 def get_remote_dumps(ctx, args, incomplete):
     context.init(ctx)

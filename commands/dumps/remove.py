@@ -4,11 +4,13 @@ from completions import get_local_dumps
 import os
 import util
 
-@click.command(name='rm')
+help_text = """(dr) Delete local database dump."""
+
+
+@click.command(name='rm', help=help_text)
 @click.argument('name', type=click.STRING, autocompletion=get_local_dumps)
 @click.pass_context
 def delete_local_dump(ctx, name):
-    """(dr) Delete local database dump."""
 
     try:
         filename = ctx.obj['db'].get_dump_filename(name)
@@ -20,7 +22,7 @@ def delete_local_dump(ctx, name):
     except Exception as e:
         util.output_error(e)
 
-@click.command(name='dr', hidden=True)
+@click.command(name='dr', help=help_text, hidden=True)
 @click.argument('name', type=click.STRING, autocompletion=get_local_dumps)
 @click.pass_context
 def delete_local_dump_alias(ctx, name):

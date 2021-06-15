@@ -1,19 +1,13 @@
 import click
 from constants import colors
 
-
-@click.command(name='p', hidden=True)
-@click.pass_context
-@click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
-def list_project_alias(ctx, only_ids):
-    ctx.invoke(list_projects, only_ids=only_ids)
+help_text = '(p) List all registered projects symlinked from ~/.project/projects.'
 
 
-@click.command('projects')
+@click.command(name='projects', help=help_text)
 @click.pass_context
 @click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
 def list_projects(ctx, only_ids):
-    """(p) List all registered projects symlinked from ~/.project/projects."""
     projects = ctx.obj['config'].get_all_projects()
 
     if only_ids:
@@ -28,3 +22,10 @@ def list_projects(ctx, only_ids):
             'Project id',
             'Path',
         ])
+
+
+@click.command(name='p', help=help_text, hidden=True)
+@click.pass_context
+@click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
+def list_project_alias(ctx, only_ids):
+    ctx.invoke(list_projects, only_ids=only_ids)

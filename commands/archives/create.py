@@ -2,12 +2,17 @@ import click
 import context
 import util
 
+help_text = """(ac) Create tar.gz archive of paths declared in 'archive' in project.yml.
 
-@click.command(name='create')
-@click.option('-n', '--name', help='Name of the archive being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
+You can use '%d' in NAME which gets replace with YYYY-MM-DD--HH:MM:SS which
+is also the default name.
+"""
+
+
+@click.command(name='create', help=help_text)
+@click.argument('name', default='%d')
 @click.pass_context
 def create_archive(ctx, name):
-    """(ac) Create tar.gz files of paths declared in 'archive' in project.yml."""
 
     click.echo('Creating archive...')
     try:
@@ -17,8 +22,8 @@ def create_archive(ctx, name):
         util.output_error('Error creating archive: {}'.format(e))
 
 
-@click.command('ac', hidden=True)
-@click.option('-n', '--name', help='Name of the archive being created. "%d" gets replaced with the current datetime: YYYY-MM-DD--HH:MM:SS.', default='%d')
+@click.command('ac', help=help_text, hidden=True)
+@click.argument('name', default='%d')
 @click.pass_context
 def create_archive_alias(ctx, name):
     context.init(ctx)

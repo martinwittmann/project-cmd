@@ -2,7 +2,9 @@ import click
 from constants import colors
 import context
 
-@click.command(name='ls')
+help_text = 'List configured host names from local hosts file.'
+
+@click.command(name='ls', help=help_text)
 @click.pass_context
 @click.option('-v', '--verbose', is_flag=True,
               help='Show more information about hostnames.')
@@ -29,7 +31,7 @@ def list_hosts(ctx, verbose):
             click.secho(name, fg=colors.success)
 
 
-@click.command(name='h', hidden=True)
+@click.command(name='h', help=help_text, hidden=True)
 @click.pass_context
 @click.option('-v', '--verbose', is_flag=True,
               help='Show more information about hostnames.')
