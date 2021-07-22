@@ -13,12 +13,12 @@ is also the default name.
 @click.argument('name', default='%d')
 @click.pass_context
 def create_dump(ctx, name):
-    click.echo('Dumping database...')
     try:
+        click.echo('Dumping database...')
         filename = ctx.obj['db'].dump(name)
         util.output_success('Database dumped to {}'.format(filename))
-    except Exception:
-        util.output_error('Error creating database dump.')
+    except Exception as e:
+        util.output_error(e)
 
 
 @click.command(name='dc', help=help_text, hidden=True)

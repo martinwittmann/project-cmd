@@ -33,10 +33,12 @@ main.add_command(commands.list_project_alias)
 main.add_command(commands.run_script)
 main.add_command(commands.run_script_alias)
 
+# TODO Add project status information to the plain project call.
+#main.add_command(commands.status)
+#main.add_command(commands.status_alias)
 
-main.add_command(commands.status)
-main.add_command(commands.status_alias)
-
+main.add_command(commands.start_project)
+main.add_command(commands.start_project_alias)
 
 @main.group(invoke_without_command=True)
 @click.pass_context

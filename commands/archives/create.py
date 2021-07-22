@@ -13,9 +13,8 @@ is also the default name.
 @click.argument('name', default='%d')
 @click.pass_context
 def create_archive(ctx, name):
-
-    click.echo('Creating archive...')
     try:
+        click.echo('Creating archive...')
         filename = ctx.obj['archives'].create_archive(name)
         util.output_success('Created archive {}.'.format(filename))
     except Exception as e:

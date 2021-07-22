@@ -11,7 +11,6 @@ help_text = """(ar) Delete local archive."""
 @click.argument('name', type=click.STRING, autocompletion=get_local_archives)
 @click.pass_context
 def delete_local_archive(ctx, name):
-
     try:
         filename = ctx.obj['archives'].get_filename(name)
         if filename is None or not os.path.isfile(filename):

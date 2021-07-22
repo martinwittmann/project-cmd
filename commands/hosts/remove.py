@@ -2,6 +2,7 @@ import click
 import os
 import subprocess
 import sys
+import util
 from constants import colors
 
 help_text = '(hr) Remove hostname from the local hosts file.'
@@ -14,31 +15,34 @@ help_text = '(hr) Remove hostname from the local hosts file.'
               default='127.0.0.1')
 @click.argument('hostname', type=click.STRING)
 def remove_host(ctx, ip, ipv6, hostname):
-    if not os.geteuid() == 0:
-        cmd = ['sudo']
-        for part in sys.argv:
-            cmd.append(part)
+    try:
+        if not os.geteuid() == 0:
+            cmd = ['sudo']
+            for part in sys.argv:
+                cmd.append(part)
 
-        click.secho('Changing the hosts file requires sudo/root permissions.',
-                    fg='yellow')
-        subprocess.run(cmd)
-        return
+            click.secho('Changing the hosts file requires sudo/root permissions.',
+                        fg='yellow')
+            subprocess.run(cmd)
+            return
 
 
-    entry_type = 'ipv4'
-    if ipv6:
-        entry_type = 'ipv6'
+        entry_type = 'ipv4'
+        if ipv6:
+            entry_type = 'ipv6'
 
-    result = ctx.obj['hosts'].remove_hostname(entry_type=entry_type, address=ip,
-                                              hostname=hostname)
-    if result:
-        click.secho('OK ', fg=colors.success, bold=True, nl=False)
-        click.echo('Successfully removed "', nl=False)
-        click.secho('{}'.format(hostname), fg='bright_yellow', nl=False)
-        click.echo('" from local hostnames for ', nl=False)
-        click.secho('{}'.format(ip), fg='bright_yellow', nl=False)
-        click.echo('.')
-        click.echo('')
+        result = ctx.obj['hosts'].remove_hostname(entry_type=entry_type, address=ip,
+                                                  hostname=hostname)
+        if result:
+            click.secho('OK ', fg=colors.success, bold=True, nl=False)
+            click.echo('Successfully removed "', nl=False)
+            click.secho('{}'.format(hostname), fg='bright_yellow', nl=False)
+            click.echo('" from local hostnames for ', nl=False)
+            click.secho('{}'.format(ip), fg='bright_yellow', nl=False)
+            click.echo('.')
+            click.echo('')
+    except Exception as e:
+        util.output_error(e)
 
 @click.command(name='hr', help=help_text, hidden=True)
 @click.pass_context

@@ -11,7 +11,6 @@ help_text = """(dr) Delete local database dump."""
 @click.argument('name', type=click.STRING, autocompletion=get_local_dumps)
 @click.pass_context
 def delete_local_dump(ctx, name):
-
     try:
         filename = ctx.obj['db'].get_dump_filename(name)
         if filename is None or not os.path.isfile(filename):

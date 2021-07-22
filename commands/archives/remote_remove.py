@@ -11,7 +11,6 @@ help_text = """(arr) Delete remote archive from server."""
 @click.argument('name', type=click.STRING, autocompletion=get_remote_archives)
 @click.pass_context
 def delete_remote_archive(ctx, name):
-
     try:
         project_id = ctx.obj['config'].get('id')
         ctx.obj['ssh'].connect()

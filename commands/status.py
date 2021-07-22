@@ -16,7 +16,10 @@ def status(ctx):
     subprocess.run(['sudo', 'ls', '-la'])
 
 
+# TODO Add project status information to the plain project call.
+"""
 @click.command(name='s', help=help_text, hidden=True)
 @click.pass_context
 def status_alias(ctx):
     ctx.invoke(status)
+"""

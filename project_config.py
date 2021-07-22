@@ -1,9 +1,8 @@
 import click
 import os
-import sys
 import pathlib
 import yaml
-from util import project_cmd_show_click_exception, debug
+import util
 from dotenv import dotenv_values
 
 class ConfigKeyNotFoundException(Exception):
@@ -34,6 +33,7 @@ class ProjectConfig:
         self._config = self.load_config(self.config_file, DEFAULT_PROJECT_CONFIG)
         self._global_config = self.get_global_config()
         self.env = dotenv_values(os.path.join(self.project_dir, ENV_FILENAME))
+        self.check_config_sanity()
 
     def get_config_location(self, project=None):
         result = False
@@ -132,3 +132,11 @@ class ProjectConfig:
     def get_global_config(self):
         filename = os.path.join(self.get_global_config_location(), GLOBAL_CONFIG_FILENAME)
         return self.load_config(filename, DEFAULT_GLOBAL_CONFIG)
+
+
+    def check_config_sanity(self):
+        if self.has_key('dependencies'):
+            dependencies = self.get('dependencies')
+            if not isinstance(dependencies, list):
+                raise Exception(
+                    'The dependencies defined in "{}" need to be a yaml list of project ids.'.format(self.config_file))

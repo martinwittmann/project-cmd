@@ -1,4 +1,5 @@
 import project_config
+import project_docker
 import project_hosts
 import project_simple_table
 import project_database
@@ -27,7 +28,12 @@ def init(ctx):
     if not 'archives' in ctx.obj:
         ctx.obj['archives'] = project_archives.Archives(ctx.obj['config'])
 
+    if not 'docker' in ctx.obj:
+        ctx.obj['docker'] = project_docker.Docker(ctx.obj['config'])
+
 def init_project(ctx, project=None):
-    ctx.obj['config'].init_project_data(project)
+    return ctx.obj['config'].init_project_data(project)
+
+
 
 

@@ -1,5 +1,4 @@
 import click
-
 import context
 from completions import get_remote_archives
 import os
@@ -13,7 +12,6 @@ help_text = """(ad) Pull/download archive from server."""
 @click.argument('archive', type=click.STRING, autocompletion=get_remote_archives)
 @click.pass_context
 def pull_archive(ctx, archive, verbose):
-
     try:
         project_id = ctx.obj['config'].get('id')
         ctx.obj['ssh'].connect()
