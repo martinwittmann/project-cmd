@@ -12,7 +12,7 @@ def start_project(ctx):
     try:
         context.init_project(ctx)
         click.secho('Starting {}...'.format(ctx.obj['config'].get('name')))
-        ctx.obj['docker'].get_dependencies()
+        ctx.obj['docker'].start_with_docker_compose()
     except Exception as e:
         util.output_error(e)
 

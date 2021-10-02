@@ -43,14 +43,14 @@ class ProjectConfig:
             path = self.get_project_path(project)
 
         if self.verbose > 0:
-            debug('Searching project config...')
+            util.debug('Searching project config...')
         while not result:
             filename = os.path.join(path, CONFIG_FILENAME)
             if self.verbose > 0:
-                debug('Searching project config at {}'.format(filename))
+                util.debug('Searching project config at {}'.format(filename))
             if os.path.isfile(filename):
                 if self.verbose > 0:
-                    debug('Found project config at {}'.format(filename))
+                    util.debug('Found project config at {}'.format(filename))
                 return filename
             else:
                 path = str(pathlib.Path(path).resolve().parent)
@@ -135,6 +135,7 @@ class ProjectConfig:
 
 
     def check_config_sanity(self):
+        # TODO Add more checks.
         if self.has_key('dependencies'):
             dependencies = self.get('dependencies')
             if not isinstance(dependencies, list):

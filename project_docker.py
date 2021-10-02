@@ -28,9 +28,19 @@ class Docker:
 
     def get_dependencies(self):
         #Extract the list of project dependencies from docker-compose.
-        config_filename = self.get_docker_compose_filename()
         return self.config.get('dependencies')
 
     def start_with_docker_compose(self):
         dependencies = self.get_dependencies()
-        services_to_start = self.config.get('docker_compose_services')
+        dependencies.insert(0, self.config.config_file)
+        command = 'docker-compose'
+        for dependency in dependencies:
+            command += ' -f "{}"'.format(self.get_docker_compose_filename(dependency))
+
+        command += ' up '
+
+        if self.config.has_key('docker_compose_services'):
+            command += ' '.join(self.config.get('docker_compose_services'))
+
+        click.echo(command)
+
