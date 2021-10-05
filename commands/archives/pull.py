@@ -32,13 +32,3 @@ def pull_archive(ctx, archive, verbose):
         util.output_success('Downloaded local database dump {} from server.'.format(basename))
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='ad', help=help_text, hidden=True)
-@click.option('-v', '--verbose', is_flag=True)
-@click.argument('archive', type=click.STRING, autocompletion=get_remote_archives)
-@click.pass_context
-def pull_archive_alias(ctx, archive, verbose):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(pull_archive, archive=archive, verbose=verbose)

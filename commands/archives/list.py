@@ -80,13 +80,3 @@ def list_archives(ctx, pattern):
             )
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='a', help=help_text, hidden=True)
-@click.argument('pattern', default='*', type=click.STRING,
-                autocompletion=get_local_archives)
-@click.pass_context
-def list_archives_alias(ctx, pattern):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(list_archives, pattern=pattern)

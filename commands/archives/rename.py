@@ -34,13 +34,3 @@ def rename_local_archive(ctx, archive, name):
                             .format(archive, name))
     except Exception as e:
         util.output_error('Error renaming local archive: {}'.format(e))
-
-
-@click.command(name='arn', help=help_text, hidden=True)
-@click.argument('archive', type=click.STRING, autocompletion=get_local_archives)
-@click.argument('name', type=click.STRING)
-@click.pass_context
-def rename_local_archive_alias(ctx, archive, name):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(rename_local_archive, archive=archive, name=name)

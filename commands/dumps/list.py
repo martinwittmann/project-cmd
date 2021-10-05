@@ -81,13 +81,3 @@ def list_dumps(ctx, pattern, verbose):
             )
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='d', help=help_text, hidden=True)
-@click.option('-v', '--verbose', is_flag=True)
-@click.argument('pattern', default='*', type=click.STRING, autocompletion=get_local_dumps)
-@click.pass_context
-def list_dumps_alias(ctx, pattern, verbose):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(list_dumps, pattern=pattern, verbose=verbose)

@@ -27,13 +27,3 @@ def push_archive(ctx, archive, verbose):
         util.output_success('Uploaded local archive {} to server.'.format(basename))
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='au', help=help_text, hidden=True)
-@click.option('-v', '--verbose', is_flag=True)
-@click.argument('archive', type=click.STRING, autocompletion=get_local_archives)
-@click.pass_context
-def push_archive_alias(ctx, archive, verbose):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(push_archive, archive=archive, verbose=verbose)

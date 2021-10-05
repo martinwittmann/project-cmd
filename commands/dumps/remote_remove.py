@@ -24,12 +24,3 @@ def delete_remote_dump(ctx, name):
         util.output_success('Deleted remote database dump "{}".'.format(name))
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='drr', help=help_text, hidden=True)
-@click.argument('name', type=click.STRING, autocompletion=get_remote_dumps)
-@click.pass_context
-def delete_remote_dump_alias(ctx, name):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(delete_remote_dump, name=name)

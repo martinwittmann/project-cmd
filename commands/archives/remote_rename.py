@@ -25,13 +25,3 @@ def rename_remote_archive(ctx, archive, name):
                             .format(archive, name))
     except Exception as e:
         util.output_error('Error renaming remote archive: {}'.format(e))
-
-
-@click.command(name='arrn', help=help_text, hidden=True)
-@click.argument('archive', type=click.STRING, autocompletion=get_remote_archives)
-@click.argument('name', type=click.STRING)
-@click.pass_context
-def rename_remote_archive_alias(ctx, archive, name):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(rename_remote_archive, archive=archive, name=name)

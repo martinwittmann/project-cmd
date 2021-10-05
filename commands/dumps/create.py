@@ -19,12 +19,3 @@ def create_dump(ctx, name):
         util.output_success('Database dumped to {}'.format(filename))
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='dc', help=help_text, hidden=True)
-@click.argument('name', default='%d')
-@click.pass_context
-def create_dump_alias(ctx, name):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(create_dump, name=name)

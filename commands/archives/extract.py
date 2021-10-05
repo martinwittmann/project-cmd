@@ -16,12 +16,3 @@ def extract_archive(ctx, name):
         util.output_success('Extracted archive {}.'.format(filename))
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='ax', help=help_text, hidden=True)
-@click.argument('name', type=click.STRING, autocompletion=get_local_archives)
-@click.pass_context
-def extract_archive_alias(ctx, name):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(extract_archive, name=name)

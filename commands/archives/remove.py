@@ -20,11 +20,3 @@ def delete_local_archive(ctx, name):
         util.output_success('Deleted archive "{}".'.format(basename))
     except Exception as e:
         util.output_error(e)
-
-@click.command(name='ar', help=help_text, hidden=True)
-@click.argument('name', type=click.STRING, autocompletion=get_local_archives)
-@click.pass_context
-def delete_local_archive_alias(ctx, name):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(delete_local_archive, name=name)

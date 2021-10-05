@@ -33,13 +33,3 @@ def pull_dump(ctx, dump, verbose):
                             .format(basename))
     except Exception as e:
         util.output_error('Remote database dump not found in project {}: {}'.format(ctx.obj['config'].get('id'), dump))
-
-
-@click.command(name='dd', help=help_text, hidden=True)
-@click.option('-v', '--verbose', is_flag=True)
-@click.argument('dump', type=click.STRING, autocompletion=get_remote_dumps)
-@click.pass_context
-def pull_dump_alias(ctx, dump, verbose):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(pull_dump, dump=dump, verbose=verbose)

@@ -19,12 +19,3 @@ def create_archive(ctx, name):
         util.output_success('Created archive {}.'.format(filename))
     except Exception as e:
         util.output_error('Error creating archive: {}'.format(e))
-
-
-@click.command('ac', help=help_text, hidden=True)
-@click.argument('name', default='%d')
-@click.pass_context
-def create_archive_alias(ctx, name):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(create_archive, name=name)

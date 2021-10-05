@@ -27,13 +27,3 @@ def push_dump(ctx, dump, verbose):
         util.output_success('Uploaded local database dump {} to server.'.format(basename))
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='du', help=help_text, hidden=True)
-@click.option('-v', '--verbose', is_flag=True)
-@click.argument('dump', type=click.STRING, autocompletion=get_local_dumps)
-@click.pass_context
-def push_dump_alias(ctx, dump, verbose):
-    context.init(ctx)
-    context.init_project(ctx)
-    ctx.invoke(push_dump, dump=dump, verbose=verbose)

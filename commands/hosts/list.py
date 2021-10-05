@@ -33,12 +33,3 @@ def list_hosts(ctx, verbose):
                 click.secho(name, fg=colors.success)
     except Exception as e:
         util.output_error(e)
-
-
-@click.command(name='h', help=help_text, hidden=True)
-@click.pass_context
-@click.option('-v', '--verbose', is_flag=True,
-              help='Show more information about hostnames.')
-def list_hosts_alias(ctx, verbose):
-    context.init(ctx)
-    return ctx.invoke(list_hosts, verbose=verbose)
