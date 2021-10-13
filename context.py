@@ -32,6 +32,7 @@ def init(ctx):
         ctx.obj['docker'] = project_docker.Docker(ctx.obj['config'])
 
 def init_project(ctx, project=None):
+    init(ctx)
     return ctx.obj['config'].init_project_data(project)
 
 

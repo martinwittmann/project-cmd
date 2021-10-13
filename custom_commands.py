@@ -1,55 +1,47 @@
-import click
 import importlib.util
 import os
 import sys
+import click
+
 
 COMMANDS_DIR = 'commands'
 
 
 class CustomCommands:
 
-    def __init__(self):
-        self.script_path = os.path.dirname(__file__)
+    def __init__(self, config):
+        self.config = config
 
-    def get_projects_commands_paths(self):
-        return [os.path.join(self.script_path, COMMANDS_DIR)]
+    def get_commands_paths(self):
+        projects = self.config.get_all_projects()
+        paths = []
+        for project in projects:
+            # TODO Use constant for '.project'.
+            path = os.path.join(project['location'], '.project', COMMANDS_DIR)
+            if os.path.isdir(path):
+                paths.append(path)
+        return paths
 
-    def get_commands_and_groups(self):
+    def get_custom_commands(self):
+        paths = self.get_commands_paths()
         result = []
-        for commands_path in self.get_projects_commands_paths():
-            result += self.get_commands_and_groups_for_path(commands_path)
-        print(result)
+        for path in paths:
+            custom_commands = self.load_custom_commands_from_project(path)
+            if isinstance(custom_commands, click.Group):
+                result.append(custom_commands)
+
         return result
 
-    def get_commands_and_groups_for_path(self, commands_path):
-        commands = []
-        for filename in os.listdir(commands_path):
-            if filename.startswith('__') or filename.startswith('.'):
-                continue
+    def load_custom_commands_from_project(self, filename):
+        module_name = os.path.basename(filename)
+        module_path_full = os.path.join(filename, '__init__.py')
 
-            full_path = os.path.join(commands_path, filename)
-            if filename.endswith('.py'):
-                commands.append(self.get_global_command(full_path))
-            elif os.path.isdir(full_path):
-                # This is a group.
-                commands += self.get_group(full_path)
-        return commands
-
-    def get_global_command(self, filename):
-        return self.import_file(filename)
-        #module = importlib.import_module(filename)
-        #name = os.path.basename(filename)
-        #return module[name]
-
-    def get_group(self, path):
-        return []
-
-    def import_file(self, filename):
-        module_name = os.path.basename(filename)[:-3]
-        print('!!!!!!!!!!!!!!')
-        print('importing ' + filename + ' - ' + module_name)
-        spec = importlib.util.spec_from_file_location(module_name, filename)
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return getattr(module, module_name[:-3])
+        try:
+            module_spec = importlib.util.spec_from_file_location(module_name, module_path_full)
+            custom_commands_module = importlib.util.module_from_spec(module_spec)
+            sys.modules[module_spec.name] = custom_commands_module
+            module_spec.loader.exec_module(custom_commands_module)
+            return custom_commands_module.commands
+        except Exception as e:
+            print(e)
+            return None

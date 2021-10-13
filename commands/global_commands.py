@@ -37,6 +37,7 @@ def cd_to_project(ctx, name):
 @click.option('-I', '--only-ids', is_flag=True, help='Output a space separated list of project ids.')
 def list_projects(ctx, only_ids):
     try:
+        context.init(ctx)
         projects = ctx.obj['config'].get_all_projects()
 
         if only_ids:

@@ -2,12 +2,6 @@ import click
 import context
 
 from . import global_commands
-#from . import status
-#from . import info
-#from . import cd
-#from . import projects
-#from . import run
-#from . import start
 
 from .archives.list import list_archives
 from .archives.create import create_archive
@@ -33,10 +27,12 @@ from .hosts import list
 from .hosts import remove
 
 
+# Even when using invoke_without_command, this function des not get called when
+# using CommandCollection as we do.
 @click.group()
 @click.pass_context
 def commands(ctx):
-    context.init(ctx)
+    pass
 
 # Add global commands to group directly.
 commands.add_command(global_commands.cd_to_project)
@@ -45,7 +41,6 @@ commands.add_command(global_commands.list_projects)
 commands.add_command(global_commands.run_command)
 commands.add_command(global_commands.start_project)
 commands.add_command(global_commands.status)
-
 
 @commands.group(invoke_without_command=True)
 @click.pass_context
