@@ -5,6 +5,8 @@ import project_simple_table
 import project_database
 import project_ssh
 import project_archives
+import project_templating
+
 
 def init(ctx):
     ctx.ensure_object(dict)
@@ -30,6 +32,9 @@ def init(ctx):
 
     if not 'docker' in ctx.obj:
         ctx.obj['docker'] = project_docker.Docker(ctx.obj['config'])
+
+    if not 'templating' in ctx.obj:
+        ctx.obj['templating'] = project_templating.ProjectTemplating()
 
 def init_project(ctx, project=None):
     init(ctx)

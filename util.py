@@ -35,6 +35,9 @@ def output_error(message, prefix='ERROR'):
     click.secho('{} '.format(prefix), fg=colors.error, bold=True, nl=False)
     click.echo(message)
 
+def output_warning(message, prefix='CONFIRM'):
+    click.secho('{} '.format(prefix), fg=colors.highlight, bold=True, nl=False)
+    click.echo(message)
 
 def output_success(message, prefix='OK'):
     click.secho('{} '.format(prefix), fg=colors.success, bold=True, nl=False)

@@ -12,6 +12,7 @@ setup(
         'python-dotenv',
         'python_hosts',
         'fabric',
+        'jinja2',
     ],
     entry_points={
         'console_scripts': [

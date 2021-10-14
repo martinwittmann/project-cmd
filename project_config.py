@@ -66,7 +66,6 @@ class ProjectConfig:
         path = os.path.join(self.get_global_projects_dir(), project)
         return os.path.realpath(path)
 
-
     def is_home_dir(self, path):
         return path is self.home_dir
 
@@ -129,6 +128,13 @@ class ProjectConfig:
             })
         return result
 
+    def project_exists(self, project_id):
+        projects = self.get_all_projects()
+        for project in projects:
+            if project['id'] == project_id:
+                return True
+        return False
+
     def get_global_config(self):
         filename = os.path.join(self.get_global_config_location(), GLOBAL_CONFIG_FILENAME)
         return self.load_config(filename, DEFAULT_GLOBAL_CONFIG)
@@ -141,3 +147,9 @@ class ProjectConfig:
             if not isinstance(dependencies, list):
                 raise Exception(
                     'The dependencies defined in "{}" need to be a yaml list of project ids.'.format(self.config_file))
+
+    def get_env_data(self, project=None):
+        config_path = self.get_config_location(project)
+        project_path = os.path.dirname(config_path)
+        return dotenv_values(os.path.join(project_path, ENV_FILENAME))
+
