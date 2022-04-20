@@ -32,7 +32,8 @@ class ProjectConfig:
         self.dot_project_dir = os.path.join(self.project_dir, DOT_PROJECT_DIR)
         self._config = self.load_config(self.config_file, DEFAULT_PROJECT_CONFIG)
         self._global_config = self.get_global_config()
-        self.env = dotenv_values(os.path.join(self.project_dir, ENV_FILENAME))
+        self.env_file = os.path.join(self.project_dir, ENV_FILENAME)
+        self.env = dotenv_values(self.env_file)
         self.check_config_sanity()
 
     def get_config_location(self, project=None):

@@ -1,6 +1,7 @@
 import click
 import os
 import yaml
+import subprocess
 
 import util
 from util import project_cmd_show_click_exception, debug
@@ -33,14 +34,24 @@ class Docker:
     def start_with_docker_compose(self):
         dependencies = self.get_dependencies()
         dependencies.insert(0, self.config.config_file)
-        command = 'docker-compose'
-        for dependency in dependencies:
-            command += ' -f "{}"'.format(self.get_docker_compose_filename(dependency))
+        env_file = self.config.env_file
+        command = [
+            'docker-compose',
+            '--env-file',
+            env_file,
+        ]
 
-        command += ' up '
+        for dependency in dependencies:
+            command.append('-f')
+            command.append(self.get_docker_compose_filename(dependency))
+
+        command.append('up')
+        command.append('-d')
 
         if self.config.has_key('docker_compose_services'):
-            command += ' '.join(self.config.get('docker_compose_services'))
+            for service in self.config.get('docker_compose_services'):
+                command.append(service)
 
-        click.echo(command)
+        print(command)
+        subprocess.run(command)
 
