@@ -9,7 +9,7 @@ help_text = """(du) Push/upload archive to server."""
 
 @click.command('push', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
-@click.argument('archive', type=click.STRING, autocompletion=get_local_archives)
+@click.argument('archive', type=click.STRING, shell_complete=get_local_archives)
 @click.pass_context
 def push_archive(ctx, archive, verbose):
     try:

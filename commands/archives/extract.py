@@ -7,7 +7,7 @@ help_text = """(ax) Extract an archive, possibly overwriting local files."""
 
 
 @click.command(name='extract', help=help_text)
-@click.argument('name', type=click.STRING, autocompletion=get_local_archives)
+@click.argument('name', type=click.STRING, shell_complete=get_local_archives)
 @click.pass_context
 def extract_archive(ctx, name):
     try:

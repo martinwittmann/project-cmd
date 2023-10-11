@@ -16,6 +16,11 @@ Project cmd enables a standardized and mostly unopinionated way of handling soft
 * Project templates: Quickly create reproducable projects based on definable templates.
 * Manage hosts files: List, add and remove host entries via single commands.
 
+# Testing / Running it
+To test project cmd: execute `pip install --editable .`
+
+Requirements.txt is not needed since pip install downloads all dependencies defined in setup.py
+
 
 # Who can profit by using Project Cmd
 

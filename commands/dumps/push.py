@@ -9,7 +9,7 @@ help_text = """(du) Push/upload database dump to server."""
 
 @click.command('push', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
-@click.argument('dump', type=click.STRING, autocompletion=get_local_dumps)
+@click.argument('dump', type=click.STRING, shell_complete=get_local_dumps)
 @click.pass_context
 def push_dump(ctx, dump, verbose):
     try:

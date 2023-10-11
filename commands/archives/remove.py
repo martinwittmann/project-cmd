@@ -8,7 +8,7 @@ help_text = """(ar) Delete local archive."""
 
 
 @click.command(name='rm', help=help_text)
-@click.argument('name', type=click.STRING, autocompletion=get_local_archives)
+@click.argument('name', type=click.STRING, shell_complete=get_local_archives)
 @click.pass_context
 def delete_local_archive(ctx, name):
     try:

@@ -9,7 +9,7 @@ help_text = """(d) Lists the project's local database dumps."""
 
 @click.command(name='list', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
-@click.argument('pattern', default='*', type=click.STRING, autocompletion=get_local_dumps)
+@click.argument('pattern', default='*', type=click.STRING, shell_complete=get_local_dumps)
 @click.pass_context
 def list_dumps(ctx, pattern, verbose):
     try:

@@ -8,7 +8,7 @@ help_text = """(dr) Delete local database dump."""
 
 
 @click.command(name='rm', help=help_text)
-@click.argument('name', type=click.STRING, autocompletion=get_local_dumps)
+@click.argument('name', type=click.STRING, shell_complete=get_local_dumps)
 @click.pass_context
 def delete_local_dump(ctx, name):
     try:

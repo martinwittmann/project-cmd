@@ -10,7 +10,7 @@ help_text = """(dd) Pull/download database dump from server."""
 
 @click.command(name='pull', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
-@click.argument('dump', type=click.STRING, autocompletion=get_remote_dumps)
+@click.argument('dump', type=click.STRING, shell_complete=get_remote_dumps)
 @click.pass_context
 def pull_dump(ctx, dump, verbose):
     try:

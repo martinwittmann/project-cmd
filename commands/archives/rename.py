@@ -12,7 +12,7 @@ is also the default name.
 
 
 @click.command(name='rename', help=help_text)
-@click.argument('archive', type=click.STRING, autocompletion=get_local_archives)
+@click.argument('archive', type=click.STRING, shell_complete=get_local_archives)
 @click.argument('name', type=click.STRING)
 @click.pass_context
 def rename_local_archive(ctx, archive, name):

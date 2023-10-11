@@ -10,7 +10,7 @@ help_text = """(a) Lists the project's archives."""
 
 @click.command(name='list', help=help_text)
 @click.argument('pattern', default='*', type=click.STRING,
-                autocompletion=get_local_archives)
+                shell_complete=get_local_archives)
 @click.pass_context
 def list_archives(ctx, pattern):
     try:

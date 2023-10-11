@@ -12,7 +12,7 @@ is also the default name.
 
 
 @click.command(name='rename', help=help_text)
-@click.argument('dump', type=click.STRING, autocompletion=get_local_dumps)
+@click.argument('dump', type=click.STRING, shell_complete=get_local_dumps)
 @click.argument('name', type=click.STRING)
 @click.pass_context
 def rename_local_dump(ctx, dump, name):

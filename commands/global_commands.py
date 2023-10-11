@@ -17,7 +17,7 @@ help_texts = {
 
 @click.command(name='cd', help=help_texts['cd_to_project'])
 @click.pass_context
-@click.argument('name', autocompletion=project_names)
+@click.argument('name', shell_complete=project_names)
 def cd_to_project(ctx, name):
     try:
         context.init(ctx)

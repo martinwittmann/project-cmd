@@ -8,7 +8,7 @@ help_text = """(drr) Delete remote database dump from server."""
 
 
 @click.command(name='rrm', help=help_text)
-@click.argument('name', type=click.STRING, autocompletion=get_remote_dumps)
+@click.argument('name', type=click.STRING, shell_complete=get_remote_dumps)
 @click.pass_context
 def delete_remote_dump(ctx, name):
     try:

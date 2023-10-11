@@ -70,7 +70,7 @@ class SimpleTable:
             # let's adjust the last column to make the table use the width we
             # want it to.
             # A positive offset means that we need to expand the column.
-            if available_width_offset is not 0:
+            if available_width_offset != 0:
                 columns[-1]['width'] += available_width_offset
                 available_width_offset = 0
 

@@ -9,7 +9,7 @@ help_text = """(ad) Pull/download archive from server."""
 
 @click.command(name='pull', help=help_text)
 @click.option('-v', '--verbose', is_flag=True)
-@click.argument('archive', type=click.STRING, autocompletion=get_remote_archives)
+@click.argument('archive', type=click.STRING, shell_complete=get_remote_archives)
 @click.pass_context
 def pull_archive(ctx, archive, verbose):
     try:

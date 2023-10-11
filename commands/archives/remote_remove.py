@@ -8,7 +8,7 @@ help_text = """(arr) Delete remote archive from server."""
 
 
 @click.command(name='rrm', help=help_text)
-@click.argument('name', type=click.STRING, autocompletion=get_remote_archives)
+@click.argument('name', type=click.STRING, shell_complete=get_remote_archives)
 @click.pass_context
 def delete_remote_archive(ctx, name):
     try:
