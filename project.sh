@@ -52,6 +52,17 @@ if [ $# -ge 1 ]; then
         run)
             _project_execute_script "$2"
             ;;
+
+        list)
+            #echo "The following projects were found:"
+            for project_path in `find "$PROJECT_PROJECTS_PATH" -type l`; do
+              project_name=`basename "$project_path"`
+              project_path=`realpath $project_path`
+              spaces=$((10 - ${#project_name}))
+              spaces=`printf "%${spaces}s"`
+              echo -e "${PROJECT_TEXT_YELLOW}${project_name}${spaces}$PROJECT_TEXT_RESET: $project_path"
+            done
+            ;;
     esac
 else
   echo "Usage: $0 -p [name] <command>"
