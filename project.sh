@@ -81,16 +81,22 @@ _project_cmd() {
         local project_name=$(_project_get_project_name "$project_path")
         _project_setup_project "$project_name" "$project_path"
         local script_name="$2"
-        _project_execute_script "$script_name"
+        _project_execute_script "$project_name" "$script_name"
         ;;
 
       list)
         echo "The following projects were found:"
         for project_path in "${!PROJECT_PROJECTS[@]}"; do
+          local scripts_path=$(_project_get_scripts_path "$project_path")
+          source "$scripts_path/status.sh"
           local project_name="${PROJECT_PROJECTS[$project_path]}"
-          local spaces=$((10 - ${#project_name}))
-          spaces=$(printf "%${spaces}s")
-          echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${spaces}$PROJECT_TEXT_RESET: $project_path"
+          local name_padding=$((10 - ${#project_name}))
+          name_padding=$(printf "%${name_padding}s")
+          local status=$(_project_execute_script "$project_name" "status" "summary")
+          local path_padding=$((50 - ${#project_path}))
+          path_padding=$(printf "%${path_padding}s")
+
+          echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${name_padding}$PROJECT_TEXT_RESET $project_path${path_padding}$status"
         done
         ;;
 

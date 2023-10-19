@@ -61,7 +61,7 @@ _project_setup_project() {
   fi
 
   _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
-  SCRIPTS_PATH=$(realpath "$PROJECT_PATH/.project/scripts")
+  SCRIPTS_PATH=$(_project_get_scripts_path "$PROJECT_PATH")
 
   if [ $? -ne 0 ]; then
     project_show_error "Project scripts directory \"$SCRIPTS_PATH\" not found."
@@ -77,7 +77,9 @@ _project_setup_project() {
   fi
 
   #set -o allexport
-  source "$PROJECT_ENV_FILENAME"
+  if [ -f "$PROJECT_ENV_FILENAME" ]; then
+    source "$PROJECT_ENV_FILENAME"
+  fi
   #set +o allexport
 
 
