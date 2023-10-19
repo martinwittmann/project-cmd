@@ -11,18 +11,18 @@ _project_populate_projects_array() {
   done
 }
 
-_project_get_name_by_path() {
-  local target_dir=`realpath "$1"`
-  # Note that we can't use double quotes in the for loop as this breaks it for
-  # some reason.
-  for symlink in $PROJECT_PROJECTS_PATH/*; do
-    link_target=`readlink -f $symlink`
-    if [ -L "$symlink" ] && [ "$link_target" == "$target_dir" ]; then
-      echo `basename $symlink`
+_project_get_project_path_by_name() {
+  project_name="$1"
+  local item_name
+  for item_path in "${!PROJECT_PROJECTS[@]}"; do
+    local item_name="${PROJECT_PROJECTS[$item_path]}"
+    if [ "$project_name" == "$item_name" ]; then
+      echo "$item_path"
       return 0
     fi
   done
 
+  project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
   return 1
 }
 
@@ -44,15 +44,19 @@ _project_get_project_path() {
 }
 
 project_show_error() {
-  echo -e "$PROJECT_STATUS_ERROR $1"
+  echo -e "$PROJECT_STATUS_ERROR $1" >&2
 }
 
 project_show_warning() {
-  echo -e "$PROJECT_STATUS_WARNING $1"
+  echo -e "$PROJECT_STATUS_WARNING $1" >&2
 }
 
 project_show_success() {
-  echo -e "$PROJECT_STATUS_SUCCESS $1"
+  echo -e "$PROJECT_STATUS_SUCCESS $1" >&2
+}
+
+project_show_message() {
+  echo -e "$1" >&2
 }
 
 _project_execute_script() {
@@ -71,10 +75,4 @@ _project_execute_script() {
   fi
 
   eval "$FUNCTION_NAME"
-}
-
-_project_assert_project_exists() {
-  if [ -z $PROJECT_NAME ] || [ -z $PROJECT_PATH ] || [ ! -d $PROJECT_PATH ]; then
-    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${PROJECT_NAME}$PROJECT_TEXT_RESET\" not found."
-  fi
 }

@@ -18,9 +18,10 @@ _project_setup() {
 
   PROJECT_NAME="$1"
 
-  declare -A PROJECT_PROJECTS
-
+  # We need to declare it as global.
+  declare -Ag PROJECT_PROJECTS
   _project_populate_projects_array
+
   if [ -z "$PROJECT_NAME" ]; then
     PROJECT_PATH=`_project_get_project_path`
     PROJECT_NAME=`basename "$PROJECT_PATH"`
@@ -32,33 +33,52 @@ _project_setup() {
     fi
   fi
 
-  echo $PROJECT_NAME
-  echo $PROJECT_PATH
+}
 
-  if [ ! -z $PROJECT_NAME ] && [ ! -z $PROJECT_PATH ]; then
-    SCRIPTS_PATH=`realpath "$PROJECT_PATH/scripts"`
-
-    if [ $? -ne 0 ]; then
-      project_show_error "Project scripts directory \"$SCRIPTS_PATH\" not found."
-      SETUP_ERROR=1
-    fi
-
-    # Set everything defined in .env as variables for this script.
-    PROJECT_ENV_FILENAME="$PROJECT_PATH/.env"
-
-    if [ ! -f "$PROJECT_ENV_FILENAME" ]; then
-      project_show_error "Project env file \"$PROJECT_ENV_FILENAME\" not found."
-      SETUP_ERROR=1
-    fi
-
-    #set -o allexport
-    source "$PROJECT_ENV_FILENAME"
-    #set +o allexport
-
+_project_assert_project_exists() {
+  local project_name="$1"
+  local project_path="$2"
+  if [ -z $project_path ]; then
+    project_path=`_project_get_project_path_by_name "$project_name"`
 
     if [ $? -ne 0 ]; then
-      project_show_error "Error sourcing env file \"$PROJECT_ENV_FILENAME\"."
-      SETUP_ERROR=1
+      return 1
     fi
+  fi
+
+  if [ -z $project_name ] || [ -z $project_path ] || [ ! -d $project_path ]; then
+    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
+    return 1
+  fi
+
+  return 0
+}
+
+_project_setup_project() {
+  _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
+  SCRIPTS_PATH=`realpath "$PROJECT_PATH/scripts"`
+
+  if [ $? -ne 0 ]; then
+    project_show_error "Project scripts directory \"$SCRIPTS_PATH\" not found."
+    SETUP_ERROR=1
+  fi
+
+  # Set everything defined in .env as variables for this script.
+  PROJECT_ENV_FILENAME="$PROJECT_PATH/.env"
+
+  if [ ! -f "$PROJECT_ENV_FILENAME" ]; then
+    project_show_error "Project env file \"$PROJECT_ENV_FILENAME\" not found."
+    SETUP_ERROR=1
+  fi
+
+  #set -o allexport
+  source "$PROJECT_ENV_FILENAME"
+  #set +o allexport
+
+
+  if [ $? -ne 0 ]; then
+    project_show_error "Error sourcing env file \"$PROJECT_ENV_FILENAME\"."
+    SETUP_ERROR=1
+    return 1
   fi
 }

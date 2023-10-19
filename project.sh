@@ -1,17 +1,14 @@
 #!/bin/bash
 
 _project_cmd() {
-
   # The path of project.sh.
   local __PROJECT_SCRIPT_PATH=`realpath "${BASH_SOURCE[0]}" | xargs dirname`
-
-  PROJECT_NAME=""
-  PROJECT_PATH=""
 
   # Include setup functions.
   source "$__PROJECT_SCRIPT_PATH/_functions.sh"
 
   local PROJECT_NAME=""
+  local PROJECT_PATH=""
   local COMMAND="status"
 
   # Parse options
@@ -55,32 +52,40 @@ _project_cmd() {
   fi
 
   source "$__PROJECT_SCRIPT_PATH/_setup.sh"
-  _project_setup "$project_name"
+  _project_setup
+
   if [ "$SETUP_ERROR" -eq 1 ]; then
     return 1
   fi
 
   case $COMMAND in
       status)
-        _project_assert_project_exists
+        _project_setup_project "$project_name"
         echo "Show project status."
         ;;
 
       cd)
-        _project_assert_project_exists
+        local project_name="$2"
+        local project_path
+        project_path=`_project_get_project_path_by_name "$project_name"`
+
+        if [ $? -ne 0 ]; then
+          return 1
+        fi
+        project_show_message "You're now in project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\"."
         cd "$project_path"
         ;;
 
       run)
+        _project_setup "$project_name"
         _project_assert_project_exists
         _project_execute_script "$2"
         ;;
 
       list)
         echo "The following projects were found:"
-        for project_path in `find "$PROJECT_PROJECTS_PATH" -type l`; do
-          project_name=`basename "$project_path"`
-          local project_path=`realpath $project_path`
+        for project_path in "${!PROJECT_PROJECTS[@]}"; do
+          local project_name="${PROJECT_PROJECTS[$project_path]}"
           local spaces=$((10 - ${#project_name}))
           spaces=`printf "%${spaces}s"`
           echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${spaces}$PROJECT_TEXT_RESET: $project_path"
@@ -93,4 +98,4 @@ _project_cmd() {
   esac
 }
 
-_project_cmd
+_project_cmd "$@"
