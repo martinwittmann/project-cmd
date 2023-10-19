@@ -123,15 +123,22 @@ _project_get_project_status() {
   # Output format can be "services" or "summary"
   local output_format="${2:-services}"
 
-
-  local compose_filename="$project_path/.project/docker-compose.yml"
+  local compose_filename="$project_path/docker-compose.yml"
   local status=$(docker compose -f "$compose_filename" ps --format '{{.Name}} {{.Status}}')
 
   local project_status="down"
   local all_services_up=true
 
-  if [ "$output_format" == "services" ]; then
-    echo -e "Containers for project \"${PROJECT_TEXT_YELLOW}${PROJECT_NAME}$PROJECT_TEXT_RESET\":"
+  if [[ "$output_format" == "services" ]]; then
+    echo -e "Containers for project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\":"
+  fi
+
+  if [ -z "$status" ]; then
+    if [[ "$output_format" == "services" ]]; then
+      echo -n "All services are "
+    fi
+    _project_status_output "down"
+    return 0
   fi
 
   while IFS= read -r line; do
@@ -147,7 +154,7 @@ _project_get_project_status() {
       all_services_up=false
     fi
 
-    if [ "$output_format" == "services" ]; then
+    if [[ "$output_format" == "services" ]]; then
       local spaces=$((10 - ${#container_name}))
       spaces=$(printf "%${spaces}s")
       echo -n " $container_name:$spaces"
@@ -159,7 +166,7 @@ _project_get_project_status() {
     project_status="up"
   fi
 
-  if [ "$output_format" == "summary" ]; then
+  if [[ "$output_format" == "summary" ]]; then
     _project_status_output "$project_status"
   fi
 }
