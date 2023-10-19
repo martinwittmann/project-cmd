@@ -14,7 +14,7 @@ _project_setup() {
   PROJECT_STATUS_WARNING="$PROJECT_TEXT_YELLOW$PROJECT_TEXT_BOLD[WARNING]$PROJECT_TEXT_RESET"
 
   # Set up path variables.
-  PROJECT_PROJECTS_PATH=`realpath ~/.projects`
+  PROJECT_PROJECTS_PATH=$(realpath ~/.projects)
 
   PROJECT_NAME="$1"
 
@@ -23,10 +23,10 @@ _project_setup() {
   _project_populate_projects_array
 
   if [ -z "$PROJECT_NAME" ]; then
-    PROJECT_PATH=`_project_get_project_path`
-    PROJECT_NAME=`basename "$PROJECT_PATH"`
+    PROJECT_PATH=$(_project_get_project_path)
+    PROJECT_NAME=$(basename "$PROJECT_PATH")
   else
-    PROJECT_PATH=`realpath "$PROJECT_PROJECTS_PATH/$PROJECT_NAME"`
+    PROJECT_PATH=$(realpath "$PROJECT_PROJECTS_PATH/$PROJECT_NAME")
     if [ ! -d "$PROJECT_PATH" ]; then
       project_show_error "Project not found: \"$PROJECT_TEXT_YELLOW$PROJECT_PATH$PROJECT_TEXT_RESET\"."
       return 1
@@ -39,7 +39,7 @@ _project_assert_project_exists() {
   local project_name="$1"
   local project_path="$2"
   if [ -z $project_path ]; then
-    project_path=`_project_get_project_path_by_name "$project_name"`
+    project_path=$(_project_get_project_path_by_name "$project_name")
 
     if [ $? -ne 0 ]; then
       return 1
@@ -56,7 +56,7 @@ _project_assert_project_exists() {
 
 _project_setup_project() {
   _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
-  SCRIPTS_PATH=`realpath "$PROJECT_PATH/scripts"`
+  SCRIPTS_PATH=$(realpath "$PROJECT_PATH/.project/scripts")
 
   if [ $? -ne 0 ]; then
     project_show_error "Project scripts directory \"$SCRIPTS_PATH\" not found."

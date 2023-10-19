@@ -2,7 +2,7 @@
 
 _project_cmd() {
   # The path of project.sh.
-  local __PROJECT_SCRIPT_PATH=`realpath "${BASH_SOURCE[0]}" | xargs dirname`
+  local __PROJECT_SCRIPT_PATH=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
 
   # Include setup functions.
   source "$__PROJECT_SCRIPT_PATH/_functions.sh"
@@ -67,7 +67,7 @@ _project_cmd() {
       cd)
         local project_name="$2"
         local project_path
-        project_path=`_project_get_project_path_by_name "$project_name"`
+        project_path=$(_project_get_project_path_by_name "$project_name")
 
         if [ $? -ne 0 ]; then
           return 1
@@ -87,7 +87,7 @@ _project_cmd() {
         for project_path in "${!PROJECT_PROJECTS[@]}"; do
           local project_name="${PROJECT_PROJECTS[$project_path]}"
           local spaces=$((10 - ${#project_name}))
-          spaces=`printf "%${spaces}s"`
+          spaces=$(printf "%${spaces}s")
           echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${spaces}$PROJECT_TEXT_RESET: $project_path"
         done
         ;;
