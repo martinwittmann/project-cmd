@@ -1,23 +1,46 @@
 #!/bin/bash
 
+_project_populate_projects_array() {
+  # Note that we can't use double quotes in the for loop as this breaks it for
+  # some reason.
+  for symlink in $PROJECT_PROJECTS_PATH/*; do
+    if [ -L "$symlink" ]; then
+      local project_path=`readlink -f "$symlink"`
+      PROJECT_PROJECTS["$project_path"]=`basename "$symlink"`
+    fi
+  done
+}
+
+_project_get_name_by_path() {
+  local target_dir=`realpath "$1"`
+  # Note that we can't use double quotes in the for loop as this breaks it for
+  # some reason.
+  for symlink in $PROJECT_PROJECTS_PATH/*; do
+    link_target=`readlink -f $symlink`
+    if [ -L "$symlink" ] && [ "$link_target" == "$target_dir" ]; then
+      echo `basename $symlink`
+      return 0
+    fi
+  done
+
+  return 1
+}
+
 _project_get_project_path() {
-    CURRENT_PATH="$1"
+  local current_path="$1"
 
-    if [ -z "$CURRENT_PATH" ]; then
-        CURRENT_PATH=`pwd`
-    fi
+  if [ -z "$current_path" ]; then
+    current_path=`pwd`
+  fi
 
-    ENV_FILE=`realpath "$CURRENT_PATH/.env"`
-
-    if [ -f "$ENV_FILE" ]; then
-        echo $CURRENT_PATH
-    elif [ "$CURRENT_PATH" == "/" ]; then
-        exit 1
-    else
-        CURRENT_PATH=`realpath "$CURRENT_PATH/.."`
-        _project_get_project_path "$CURRENT_PATH"
-    fi
-    exit 0
+  if [[ -v PROJECT_PROJECTS["$current_path"] ]]; then
+    echo $current_path
+  elif [ "$current_path" == "/" ]; then
+    return 1
+  else
+    current_path=`realpath "$current_path/.."`
+    _project_get_project_path "$current_path"
+  fi
 }
 
 project_show_error() {
@@ -33,19 +56,25 @@ project_show_success() {
 }
 
 _project_execute_script() {
-    SCRIPT_NAME="${1:-status}"
-    FUNCTION_NAME="_project_run_$SCRIPT_NAME"
-    SCRIPT_FILENAME=`realpath "$SCRIPTS_PATH/$SCRIPT_NAME.sh"`
-    if [ ! -f "$SCRIPT_FILENAME" ]; then
-        project_show_error "Script function $PROJECT_TEXT_YELLOW$FUNCTION_NAME$PROJECT_TEXT_RESET not found."
-    fi
-    
+  SCRIPT_NAME="${1:-status}"
+  FUNCTION_NAME="_project_run_$SCRIPT_NAME"
+  SCRIPT_FILENAME=`realpath "$SCRIPTS_PATH/$SCRIPT_NAME.sh"`
+  if [ ! -f "$SCRIPT_FILENAME" ]; then
+    project_show_error "Script function $PROJECT_TEXT_YELLOW$FUNCTION_NAME$PROJECT_TEXT_RESET not found."
+  fi
+
+  source "$SCRIPT_FILENAME"
+
+
+  if [ "$(type -t $FUNCTION_NAME)" != "function" ] && [ -f "$SCRIPT_FILENAME" ]; then
     source "$SCRIPT_FILENAME"
+  fi
 
+  eval "$FUNCTION_NAME"
+}
 
-    if [ "$(type -t $FUNCTION_NAME)" != "function" ] && [ -f "$SCRIPT_FILENAME" ]; then
-        source "$SCRIPT_FILENAME"
-    fi
-
-    eval "$FUNCTION_NAME"
+_project_assert_project_exists() {
+  if [ -z $PROJECT_NAME ] || [ -z $PROJECT_PATH ] || [ ! -d $PROJECT_PATH ]; then
+    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${PROJECT_NAME}$PROJECT_TEXT_RESET\" not found."
+  fi
 }
