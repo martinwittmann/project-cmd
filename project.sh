@@ -7,15 +7,15 @@ _project_cmd() {
   # Include setup functions.
   source "$__PROJECT_SCRIPT_PATH/_functions.sh"
 
-  local PROJECT_NAME=""
-  local PROJECT_PATH=""
-  local COMMAND="status"
+  local project_name=""
+  local project_path=""
+  local command="status"
 
   # Parse options
   while getopts ":p:" opt; do
     case $opt in
       p)
-        PROJECT_NAME="$OPTARG"
+        project_name="$OPTARG"
         ;;
       \?)
         echo "Invalid option: -$OPTARG" >&2
@@ -28,15 +28,12 @@ _project_cmd() {
     esac
   done
 
-  # Set up variables and helpers after parsing options to allow setting/overriding
-  # the project with -p [project_name].
-
   # Shift the options out
   shift $((OPTIND - 1))
 
 
 
-  if [ "$COMMAND" == "cd" ]; then
+  if [ "$command" == "cd" ]; then
       # when using the cd command we expect the project's name as second
       # argument which would override the -p option.
       local project_name="$2"
@@ -48,7 +45,7 @@ _project_cmd() {
   fi
 
   if [ $# -ge 1 ]; then
-    COMMAND="$1"
+    command="$1"
   fi
 
   source "$__PROJECT_SCRIPT_PATH/_setup.sh"
@@ -58,15 +55,14 @@ _project_cmd() {
     return 1
   fi
 
-  case $COMMAND in
+  case $command in
       status)
         _project_setup_project "$project_name"
         echo "Show project status."
         ;;
 
       cd)
-        local project_name="$2"
-        local project_path
+        project_name="$2"
         project_path=$(_project_get_project_path_by_name "$project_name")
 
         if [ $? -ne 0 ]; then
@@ -77,8 +73,8 @@ _project_cmd() {
         ;;
 
       run)
-        local project_path=$(_project_get_project_path)
-        local project_name=$(_project_get_project_name "$project_path")
+        project_path=$(_project_get_project_path)
+        project_name=$(_project_get_project_name "$project_path")
         _project_setup_project "$project_name" "$project_path"
         local script_name="$2"
         _project_execute_script "$project_name" "$script_name"
@@ -101,7 +97,7 @@ _project_cmd() {
         ;;
 
       *)
-        project_show_error "Unknown command \"$PROJECT_TEXT_YELLOW$COMMAND$PROJECT_TEXT_RESET\"."
+        project_show_error "Unknown command \"$PROJECT_TEXT_YELLOW$command$PROJECT_TEXT_RESET\"."
         ;;
   esac
 }
