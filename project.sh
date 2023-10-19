@@ -77,9 +77,11 @@ _project_cmd() {
         ;;
 
       run)
-        _project_setup "$project_name"
-        _project_assert_project_exists
-        _project_execute_script "$2"
+        local project_path=$(_project_get_project_path)
+        local project_name=$(_project_get_project_name "$project_path")
+        _project_setup_project "$project_name" "$project_path"
+        local script_name="$2"
+        _project_execute_script "$script_name"
         ;;
 
       list)

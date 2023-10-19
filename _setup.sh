@@ -55,6 +55,11 @@ _project_assert_project_exists() {
 }
 
 _project_setup_project() {
+  PROJECT_NAME="$1"
+  if [ -z $project_path ]; then
+    PROJECT_PATH=$(_project_get_project_path_by_name "$PROJECT_NAME")
+  fi
+
   _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
   SCRIPTS_PATH=$(realpath "$PROJECT_PATH/.project/scripts")
 

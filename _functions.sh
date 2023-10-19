@@ -43,6 +43,21 @@ _project_get_project_path() {
   fi
 }
 
+_project_get_project_name() {
+  local project_path="$1"
+
+  if [ -z "$project_path" ]; then
+    project_path=$(_project_get_project_path)
+  fi
+
+  if [[ -v PROJECT_PROJECTS["$project_path"] ]]; then
+    echo "${PROJECT_PROJECTS["$project_path"]}"
+  else
+    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
+    return 1
+  fi
+}
+
 project_show_error() {
   echo -e "$PROJECT_STATUS_ERROR $1" >&2
 }
