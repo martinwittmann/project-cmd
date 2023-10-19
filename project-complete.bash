@@ -44,10 +44,6 @@ _project_run_autocomplete() {
 
   PROJECT_NAME="${PROJECT_PROJECTS[$PROJECT_PATH]}"
   _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
-  #if [[ ! -v PROJECT_PROJECTS[$PROJECT_PATH] ]]; then
-    #project_show_error "Scripts dir not found for project."
-  #fi
-
 
   local cur="$1"
   local scripts_dir="$PROJECT_PATH/.project/scripts"
@@ -58,24 +54,12 @@ _project_run_autocomplete() {
     return 1
   fi
 
-  local scripts
-  scripts=$(ls "$scripts_dir" | sed -e 's/\.sh$//')
-
-  # Complete script names
-  if [ $COMP_CWORD -eq 2 ]; then
-    COMPREPLY=$(compgen -W $scripts -- $cur)
-  else
-    FUNCTION_NAME="_project_complete_${COMP_WORDS[1]}"
-    if [ "$(type -t $FUNCTION_NAME)"]; then
-      COMPREPLY=$()
+  local scripts=()
+  for script in $PROJECT_PATH/.project/scripts/*.sh; do
+    if [ -f "$script" ]; then
+      scripts+=($(basename $script|sed -e 's/\.sh$//'))
     fi
+  done
 
-    COMPREPLY=()
-    cur_word="${COMP_WORDS[COMP_CWORD]}"
-    prev_word="${COMP_WORDS[COMP_CWORD-1]}"
-
-    if [[ $(type -t foo) == function ]]; then
-      COMPREPLY+=$("$FUNCTION_NAME")
-    fi
-  fi
+  COMPREPLY=($(compgen -W "${scripts[*]}" -- $cur))
 }
