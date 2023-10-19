@@ -1,5 +1,1 @@
-venv/
 .idea/
-__pycache__/
-project.egg-info/
-*.pyc

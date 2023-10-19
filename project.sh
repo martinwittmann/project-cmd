@@ -89,7 +89,7 @@ _project_cmd() {
           local name_padding=$((10 - ${#project_name}))
           name_padding=$(printf "%${name_padding}s")
           local status=$(_project_execute_script "$project_name" "status" "summary")
-          local path_padding=$((50 - ${#project_path}))
+          local path_padding=$((60 - ${#project_path}))
           path_padding=$(printf "%${path_padding}s")
 
           echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${name_padding}$PROJECT_TEXT_RESET $project_path${path_padding}$status"
