@@ -76,3 +76,9 @@ _project_execute_script() {
 
   eval "$FUNCTION_NAME"
 }
+
+_project_get_project_names() {
+  for item_path in "${!PROJECT_PROJECTS[@]}"; do
+    echo "${PROJECT_PROJECTS[$item_path]}"
+  done
+}
