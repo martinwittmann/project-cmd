@@ -83,31 +83,40 @@ _project_get_scripts_path() {
   echo "$project_path/.project/scripts"
 }
 
-_project_execute_script() {
+_project_load_script() {
   local project_name="$1"
-  local script_name="${2:-status}"
-  # Remove the first 2 arguments so we can pass the rest to the function call later.
-  shift
-  shift
-
-
-  local function_name="_project_run_$script_name"
+  local script_name="$2"
+  local function_name="_project_${project_name}_run_$script_name"
   local project_path=$(_project_get_project_path_by_name "$project_name")
   local scripts_path=$(_project_get_scripts_path "$project_path")
   local script_filename="$scripts_path/$script_name.sh"
 
-  if [ ! -f "$script_filename" ]; then
-    project_show_error "Script function $PROJECT_TEXT_YELLOW$function_name$PROJECT_TEXT_RESET not found."
-  fi
-
-  source "$script_filename"
-
-
-  if [ "$(type -t $function_name)" != "function" ] && [ -f "$script_filename" ]; then
+  if [ -f "$script_filename" ]; then
     source "$script_filename"
   fi
 
-  eval "$function_name $@"
+  if [ "$(type -t $function_name)" != "function" ]; then
+    project_show_warning "The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
+    return 1
+  fi
+}
+
+_project_execute_script() {
+  local project_name="$1"
+  local script_name="${2:-status}"
+  local function_name="_project_${project_name}_run_$script_name"
+
+  # Remove the first 2 arguments so we can pass the rest to the function call later.
+  shift
+  shift
+
+  _project_load_script "$project_name" "$script_name"
+
+  if [ $? -eq 0 ]; then
+    eval "$function_name $@"
+  else
+    project_show_error "Error loading script $script_name."
+  fi
 }
 
 _project_get_project_names() {
@@ -117,6 +126,26 @@ _project_get_project_names() {
 }
 
 _project_get_project_status() {
+  local project_name="$1"
+  local name_padding=$((10 - ${#project_name}))
+  local script_filename="$scripts_path/status.sh"
+  local project_status
+  _project_load_script "$project_name" "status"
+
+  if [ $? -eq 0 ]; then
+    project_status=$(_project_execute_script "$project_name" "status" "summary")
+  else
+    project_status="${PROJECT_TEXT_GRAY}unknown$PROJECT_TEXT_RESET"
+  fi
+
+  name_padding=$(printf "%${name_padding}s")
+  local path_padding=$((60 - ${#project_path}))
+  path_padding=$(printf "%${path_padding}s")
+
+  echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${name_padding}$PROJECT_TEXT_RESET $project_path${path_padding}$project_status"
+}
+
+_project_get_project_status_via_docker_compose() {
   local project_name="$1"
   local project_path=$(_project_get_project_path_by_name "$project_name")
 
