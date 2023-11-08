@@ -50,6 +50,11 @@ _project_cmd() {
 
   source "$__PROJECT_SCRIPT_PATH/_setup.sh"
   _project_setup
+  
+  if [ ! -z "$PROJECT_PATH" ]; then
+    project_name="$PROJECT_NAME"
+    project_path="$PROJECT_PATH"
+  fi
 
   if [ "$SETUP_ERROR" -eq 1 ]; then
     return 1
