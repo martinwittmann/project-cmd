@@ -152,7 +152,7 @@ _project_get_project_status_via_docker_compose() {
   # Output format can be "services" or "summary"
   local output_format="${2:-services}"
 
-  local compose_filename="$project_path/docker-compose.yml"
+  local compose_filename="$project_path/$COMPOSE_FILE"
   local status=$(docker compose -f "$compose_filename" ps --format '{{.Name}} {{.Status}}')
 
   local project_status="down"
