@@ -86,6 +86,7 @@ _project_get_scripts_path() {
 _project_load_script() {
   local project_name="$1"
   local script_name="$2"
+  local show_errors="${3:-0}"
   local function_name="_project_${project_name}_run_$script_name"
   local project_path=$(_project_get_project_path_by_name "$project_name")
   local scripts_path=$(_project_get_scripts_path "$project_path")
@@ -96,7 +97,9 @@ _project_load_script() {
   fi
 
   if [ "$(type -t $function_name)" != "function" ]; then
-    project_show_warning "The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
+    if [ $show_errors -eq 1 ]; then
+      project_show_warning "The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
+    fi
     return 1
   fi
 }
@@ -104,17 +107,18 @@ _project_load_script() {
 _project_execute_script() {
   local project_name="$1"
   local script_name="${2:-status}"
+  local show_errors="${3:-1}"
   local function_name="_project_${project_name}_run_$script_name"
 
   # Remove the first 2 arguments so we can pass the rest to the function call later.
   shift
   shift
 
-  _project_load_script "$project_name" "$script_name"
+  _project_load_script "$project_name" "$script_name" "$show_errors"
 
   if [ $? -eq 0 ]; then
     eval "$function_name $@"
-  else
+  elif [ $show_errors -eq 1 ]; then
     project_show_error "Error loading script $script_name."
   fi
 }
@@ -152,8 +156,13 @@ _project_get_project_status_via_docker_compose() {
   # Output format can be "services" or "summary"
   local output_format="${2:-services}"
 
+  if [ -z $COMPOSE_FILE ]; then
+    COMPOSE_FILE="docker-compose.yml"
+  fi
+
   local compose_filename="$project_path/$COMPOSE_FILE"
   local status=$(docker compose -f "$compose_filename" ps --format '{{.Name}} {{.Status}}')
+  echo "$status"
 
   local project_status="down"
   local all_services_up=true

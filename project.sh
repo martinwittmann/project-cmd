@@ -63,7 +63,7 @@ _project_cmd() {
   case $command in
       status)
         _project_setup_project "$project_name"
-        echo "Show project status."
+        _project_execute_script "$project_name" "status" "$@"
         ;;
 
       cd)

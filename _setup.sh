@@ -25,7 +25,7 @@ _project_setup() {
 
   if [ -z "$PROJECT_NAME" ]; then
     PROJECT_PATH=$(_project_get_project_path)
-    PROJECT_NAME=$(basename "$PROJECT_PATH")
+    PROJECT_NAME=$(_project_get_project_name)
   else
     PROJECT_PATH=$(realpath "$PROJECT_PROJECTS_PATH/$PROJECT_NAME")
     if [ ! -d "$PROJECT_PATH" ]; then
