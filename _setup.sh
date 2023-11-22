@@ -79,7 +79,7 @@ _project_setup_project() {
 
   #set -o allexport
   if [ -f "$PROJECT_ENV_FILENAME" ]; then
-    source "$PROJECT_ENV_FILENAME"
+    . "$PROJECT_ENV_FILENAME"
   fi
   #set +o allexport
 

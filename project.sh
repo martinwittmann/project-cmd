@@ -5,7 +5,7 @@ _project_cmd() {
   local __PROJECT_SCRIPT_PATH=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
 
   # Include setup functions.
-  source "$__PROJECT_SCRIPT_PATH/_functions.sh"
+  . "$__PROJECT_SCRIPT_PATH/_functions.sh"
 
   local project_name=""
   local project_path=""
@@ -48,7 +48,7 @@ _project_cmd() {
     command="$1"
   fi
 
-  source "$__PROJECT_SCRIPT_PATH/_setup.sh"
+  . "$__PROJECT_SCRIPT_PATH/_setup.sh"
   _project_setup
   
   if [ ! -z "$PROJECT_PATH" ]; then

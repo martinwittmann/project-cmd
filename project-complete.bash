@@ -2,7 +2,7 @@
 _project_autocomplete() {
   local __PROJECT_SCRIPT_PATH=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
   PROJECT_PROJECTS_PATH=`realpath ~/.projects`
-  source "$__PROJECT_SCRIPT_PATH/_functions.sh"
+  . "$__PROJECT_SCRIPT_PATH/_functions.sh"
 
   declare -Ag PROJECT_PROJECTS
   _project_populate_projects_array

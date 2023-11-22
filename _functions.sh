@@ -93,7 +93,7 @@ _project_load_script() {
   local script_filename="$scripts_path/$script_name.sh"
 
   if [ -f "$script_filename" ]; then
-    source "$script_filename"
+    . "$script_filename"
   fi
 
   if [ "$(type -t $function_name)" != "function" ]; then

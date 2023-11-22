@@ -43,7 +43,7 @@ underscores for project names.
 In order to use bash completion, add the following to your ~/.bash_aliases:
 
 ```
-source /path/to/project-cmd/project-complete.bash
+. /path/to/project-cmd/project-complete.bash
 complete -F _project_autocomplete project
 ```
 
@@ -51,7 +51,7 @@ If you like being concise you can also add an alias for project
 
 
 ```
-alias p='source /usr/bin/project'
+alias p='. /usr/bin/project'
 complete -F _project_autocomplete p
 ```
 
