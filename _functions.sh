@@ -162,7 +162,6 @@ _project_get_project_status_via_docker_compose() {
 
   local compose_filename="$project_path/$COMPOSE_FILE"
   local status=$(sudo docker compose -f "$compose_filename" ps --format '{{.Name}} {{.Status}}')
-  echo "$status"
 
   local project_status="down"
   local all_services_up=true

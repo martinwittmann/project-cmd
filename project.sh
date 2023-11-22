@@ -9,7 +9,7 @@ _project_cmd() {
 
   local project_name=""
   local project_path=""
-  local command="status"
+  local command=""
 
   # Parse options
   while getopts ":p:" opt; do
@@ -61,10 +61,6 @@ _project_cmd() {
   fi
 
   case $command in
-      status)
-        _project_setup_project "$project_name"
-        _project_execute_script "$project_name" "status" "$@"
-        ;;
 
       cd)
         project_name="$2"
@@ -92,7 +88,7 @@ _project_cmd() {
         for project_path in "${!PROJECT_PROJECTS[@]}"; do
           local scripts_path=$(_project_get_scripts_path "$project_path")
           local project_name="${PROJECT_PROJECTS[$project_path]}"
-          _project_get_project_status "$project_name"
+          _project_get_project_status "$project_name" "summary"
         done
         ;;
 
@@ -108,6 +104,11 @@ _project_cmd() {
         project_name=$(_project_get_project_name "$project_path")
         _project_setup_project "$project_name" "$project_path"
         _project_execute_script "$project_name" "stop"
+        ;;
+
+      "")
+        _project_setup_project "$project_name"
+        _project_execute_script "$project_name" "status" "$@"
         ;;
 
       *)

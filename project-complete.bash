@@ -14,7 +14,7 @@ _project_autocomplete() {
 
     "project" | "p")
       # No project command was typed, list the available commands.
-      local options=("cd" "list" "run" "start" "status" "stop")
+      local options=("cd" "list" "run" "start" "stop")
       COMPREPLY=($(compgen -W "${options[*]}" -- $cur))
       ;;
 
