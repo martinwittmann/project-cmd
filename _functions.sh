@@ -5,7 +5,13 @@ _project_populate_projects_array() {
   # some reason.
   for symlink in $PROJECT_PROJECTS_PATH/*; do
     if [ -L "$symlink" ]; then
-      local project_path=$(readlink -f "$symlink")
+      local project_path
+      project_path=$(readlink -f "$symlink")
+      if [ $? -ne 0 ]; then
+        basename "$symlink"
+        echo "Could not read $symlink"
+        return 1
+      fi
       PROJECT_PROJECTS["$project_path"]=$(basename "$symlink")
     fi
   done
@@ -14,6 +20,7 @@ _project_populate_projects_array() {
 _project_get_project_path_by_name() {
   project_name="$1"
   local item_name
+
   for item_path in "${!PROJECT_PROJECTS[@]}"; do
     local item_name="${PROJECT_PROJECTS[$item_path]}"
     if [ "$project_name" == "$item_name" ]; then

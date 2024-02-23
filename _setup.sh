@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 _project_setup() {
   SETUP_ERROR=0
 
@@ -17,11 +18,11 @@ _project_setup() {
 
   # Set up path variables.
   PROJECT_PROJECTS_PATH="/etc/project-cmd/projects.d"
+  PROJECT_PROJECTS=()
 
   PROJECT_NAME="$1"
 
   # We need to declare it as global.
-  declare -Ag PROJECT_PROJECTS
   _project_populate_projects_array
 
   if [ -z "$PROJECT_NAME" ]; then

@@ -1,10 +1,11 @@
 #!/bin/bash
-_project_autocomplete() {
-  local __PROJECT_SCRIPT_PATH=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
-  PROJECT_PROJECTS_PATH=`/etc/project-cmd/projects.d`
-  . "$__PROJECT_SCRIPT_PATH/_functions.sh"
+declare -A PROJECT_PROJECTS
 
-  declare -Ag PROJECT_PROJECTS
+_project_autocomplete() {
+  local project_script_path=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
+  PROJECT_PROJECTS_PATH="/etc/project-cmd/projects.d"
+  . "$project_script_path/_functions.sh"
+
   _project_populate_projects_array
 
   local cur=${COMP_WORDS[COMP_CWORD]}

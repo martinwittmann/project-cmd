@@ -1,5 +1,7 @@
 #!/bin/bash
 
+declare -A PROJECT_PROJECTS
+
 _project_cmd() {
   # The path of project.sh.
   local __PROJECT_SCRIPT_PATH=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
@@ -158,13 +160,61 @@ _project_cmd() {
         _project_execute_script "$project_name" "end"
         ;;
 
+      add)
+        local project_name="$2"
+        if [ -z "$project_name" ]; then
+          project_show_error "You need to provide a project name."
+          return 1
+        fi
+
+        local project_path="$3"
+        if [ -z "$project_path" ]; then
+          project_show_error "You need to provide a project path."
+          return 1
+        fi
+        project_path=$(realpath "$project_path")
+
+        if [ ! -d "$project_path" ]; then
+          project_show_error "The project path \"$PROJECT_TEXT_YELLOW${project_path}$PROJECT_TEXT_RESET\" does not exist."
+          return 1
+        fi
+        local symlink="$PROJECT_PROJECTS_PATH/$project_name"
+        sudo ln -s "$project_path" "$symlink"
+        ;;
+
       "")
         _project_setup_project "$project_name"
         _project_execute_script "$project_name" "status" "$@"
         ;;
 
+
+      remove)
+        local project_name
+        project_name="$2"
+        if [ -z "$2" ]; then
+          project_show_error "You need to provide a project name."
+          return 1
+        fi
+
+        local project_path
+        project_path=$(_project_get_project_path_by_name "$project_name")
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
+        project_name=$(_project_get_project_name "$project_path" "0")
+        if [ -z "$project_name" ]; then
+          project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
+          return 1
+        fi
+
+        sudo unlink "/etc/project-cmd/projects.d/$project_name"
+        ;;
+
       *)
         project_show_error "Unknown command \"$PROJECT_TEXT_YELLOW$command$PROJECT_TEXT_RESET\"."
+        return 1
         ;;
   esac
 }
