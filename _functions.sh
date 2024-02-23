@@ -22,12 +22,12 @@ _project_get_project_path_by_name() {
     fi
   done
 
-  project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
   return 1
 }
 
 _project_get_project_path() {
   local current_path="$1"
+  local show_errors="${2:-1}"
 
   if [ -z "$current_path" ]; then
     current_path=$(pwd)
@@ -35,7 +35,7 @@ _project_get_project_path() {
 
   if [[ -v PROJECT_PROJECTS["$current_path"] ]]; then
     echo $current_path
-  elif [ "$current_path" == "/" ]; then
+  elif [ "$current_path" == "/" ] && [ $show_errors -eq 1 ]; then
     return 1
   else
     current_path=$(realpath "$current_path/..")
@@ -45,6 +45,7 @@ _project_get_project_path() {
 
 _project_get_project_name() {
   local project_path="$1"
+  local show_errors="${2:-1}"
 
   if [ -z "$project_path" ]; then
     project_path=$(_project_get_project_path)
@@ -52,7 +53,7 @@ _project_get_project_name() {
 
   if [[ -v PROJECT_PROJECTS["$project_path"] ]]; then
     echo "${PROJECT_PROJECTS["$project_path"]}"
-  else
+  elif [ $show_errors -eq 1 ]; then
     project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
     return 1
   fi
@@ -216,5 +217,39 @@ _project_status_output() {
     echo -e "${PROJECT_TEXT_GREEN}${status}$PROJECT_TEXT_RESET"
   else
     echo -e "${PROJECT_TEXT_RED}${status}$PROJECT_TEXT_RESET"
+  fi
+}
+
+_project_print_url() {
+  local url="$1"
+  echo -en "\nProject ${PROJECT_TEXT_YELLOW}$PROJECT_NAME${PROJECT_TEXT_RESET} available at: "
+  echo -e "${PROJECT_TEXT_CYAN}\e]8;;$url\a$url\e]8;;\a${PROJECT_TEXT_RESET}"
+  echo ""
+}
+
+_project_assert_project_exists() {
+  local project_name="$1"
+  local project_path="$2"
+  if [ -z $project_path ]; then
+    project_path=$(_project_get_project_path_by_name "$project_name")
+
+    if [ $? -ne 0 ]; then
+      return 1
+    fi
+  fi
+
+  if [ -z $project_name ] || [ -z $project_path ] || [ ! -d $project_path ]; then
+    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
+    return 1
+  fi
+
+  return 0
+}
+
+_project_assert_env_var() {
+  local env_var="$1"
+  local value="${!env_var}"
+  if [ -z "$value" ]; then
+    project_show_error "The env variable \"\$${env_var}\" needs to be set for this command."
   fi
 }

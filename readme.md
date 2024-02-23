@@ -27,7 +27,7 @@ cd /usr/bin
 ln -s /path/to/project-cmd project
 ```
 
-Create the directory ~/.projects. To register a project create a symbolic link to the corresponding directory:
+Create the directory /etc/project-cmd/projects.d/. To register a project create a symbolic link to the corresponding directory:
 
 ```
 cd ~/.projects

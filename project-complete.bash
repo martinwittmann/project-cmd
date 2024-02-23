@@ -1,7 +1,7 @@
 #!/bin/bash
 _project_autocomplete() {
   local __PROJECT_SCRIPT_PATH=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
-  PROJECT_PROJECTS_PATH=`realpath ~/.projects`
+  PROJECT_PROJECTS_PATH=`/etc/project-cmd/projects.d`
   . "$__PROJECT_SCRIPT_PATH/_functions.sh"
 
   declare -Ag PROJECT_PROJECTS
@@ -43,7 +43,6 @@ _project_run_autocomplete() {
   fi
 
   PROJECT_NAME="${PROJECT_PROJECTS[$PROJECT_PATH]}"
-  _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
 
   local cur="$1"
   local scripts_dir="$PROJECT_PATH/.project/scripts"

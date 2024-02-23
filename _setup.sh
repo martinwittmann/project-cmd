@@ -9,13 +9,14 @@ _project_setup() {
   PROJECT_TEXT_GREEN="\e[32m"
   PROJECT_TEXT_GRAY="\e[2;37m"
   PROJECT_TEXT_YELLOW="\e[33m"
+  PROJECT_TEXT_CYAN="\e[36m"
   PROJECT_TEXT_BOLD="\e[1m"
   PROJECT_STATUS_SUCCESS="$PROJECT_TEXT_GREEN$PROJECT_TEXT_BOLD[OK]$PROJECT_TEXT_RESET"
   PROJECT_STATUS_ERROR="$PROJECT_TEXT_RED$PROJECT_TEXT_BOLD[ERROR]$PROJECT_TEXT_RESET"
   PROJECT_STATUS_WARNING="$PROJECT_TEXT_YELLOW$PROJECT_TEXT_BOLD[WARNING]$PROJECT_TEXT_RESET"
 
   # Set up path variables.
-  PROJECT_PROJECTS_PATH=$(realpath ~/.projects)
+  PROJECT_PROJECTS_PATH="/etc/project-cmd/projects.d"
 
   PROJECT_NAME="$1"
 
@@ -24,8 +25,8 @@ _project_setup() {
   _project_populate_projects_array
 
   if [ -z "$PROJECT_NAME" ]; then
-    PROJECT_PATH=$(_project_get_project_path)
-    PROJECT_NAME=$(_project_get_project_name)
+    PROJECT_PATH=$(_project_get_project_path "" "0")
+    PROJECT_NAME=$(_project_get_project_name "" "0")
   else
     PROJECT_PATH=$(realpath "$PROJECT_PROJECTS_PATH/$PROJECT_NAME")
     if [ ! -d "$PROJECT_PATH" ]; then
@@ -36,29 +37,15 @@ _project_setup() {
 
 }
 
-_project_assert_project_exists() {
-  local project_name="$1"
-  local project_path="$2"
-  if [ -z $project_path ]; then
-    project_path=$(_project_get_project_path_by_name "$project_name")
-
-    if [ $? -ne 0 ]; then
-      return 1
-    fi
-  fi
-
-  if [ -z $project_name ] || [ -z $project_path ] || [ ! -d $project_path ]; then
-    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
-    return 1
-  fi
-
-  return 0
-}
-
 _project_setup_project() {
   PROJECT_NAME="$1"
   if [ -z $project_path ]; then
     PROJECT_PATH=$(_project_get_project_path_by_name "$PROJECT_NAME")
+  fi
+
+  if [ $? -ne 0 ]; then
+    project_show_error "No project found."
+    return 1
   fi
 
   _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"

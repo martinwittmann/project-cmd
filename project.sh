@@ -60,6 +60,8 @@ _project_cmd() {
     return 1
   fi
 
+  local not_found_message="No project found in current dir or any parent dirs."
+
   case $command in
 
       cd)
@@ -67,6 +69,7 @@ _project_cmd() {
         project_path=$(_project_get_project_path_by_name "$project_name")
 
         if [ $? -ne 0 ]; then
+          project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
           return 1
         fi
         project_show_message "You're now in project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\"."
@@ -75,8 +78,19 @@ _project_cmd() {
 
       run)
         project_path=$(_project_get_project_path)
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
         project_name=$(_project_get_project_name "$project_path")
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
         _project_setup_project "$project_name" "$project_path"
+
         local script_name="$2"
         shift
         shift
@@ -94,16 +108,54 @@ _project_cmd() {
 
       start)
         project_path=$(_project_get_project_path)
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
         project_name=$(_project_get_project_name "$project_path")
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
         _project_setup_project "$project_name" "$project_path"
         _project_execute_script "$project_name" "start"
+        _project_print_url "http://$PROJECT_DOMAIN"
         ;;
 
       stop)
         project_path=$(_project_get_project_path)
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
         project_name=$(_project_get_project_name "$project_path")
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
         _project_setup_project "$project_name" "$project_path"
         _project_execute_script "$project_name" "stop"
+        ;;
+
+      end)
+        project_path=$(_project_get_project_path)
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
+        project_name=$(_project_get_project_name "$project_path")
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
+        _project_setup_project "$project_name" "$project_path"
+        _project_execute_script "$project_name" "end"
         ;;
 
       "")
