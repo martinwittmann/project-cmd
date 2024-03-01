@@ -91,6 +91,12 @@ _project_get_scripts_path() {
   echo "$project_path/.project/scripts"
 }
 
+_project_get_script_path() {
+  local project_path="$1"
+  local script_name="$2"
+  echo "$project_path/.project/scripts/$script_name.sh"
+}
+
 _project_load_script() {
   local project_name="$1"
   local script_name="$2"
@@ -109,6 +115,23 @@ _project_load_script() {
       project_show_warning "The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
     fi
     return 1
+  fi
+}
+
+_project_run_script() {
+  local project_name="$1"
+  local project_path="$2"
+  local script_name="$3"
+  local script_filename=$(_project_get_script_path "$project_path" "$script_name")
+
+  local global_scripts="$__PROJECT_SCRIPT_PATH/_global-scripts.sh"
+  source $global_scripts
+  if [ -f "$script_filename" ]; then
+    # We need to source the script file to make all our variables and commands /
+    # functions available to the script.
+    source "$script_filename"
+  else
+    project_show_error "$script_filename aaThe script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
   fi
 }
 

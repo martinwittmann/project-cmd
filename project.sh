@@ -78,6 +78,7 @@ _project_cmd() {
         cd "$project_path"
         ;;
 
+
       run)
         project_path=$(_project_get_project_path)
         if [ $? -ne 0 ]; then
@@ -96,7 +97,7 @@ _project_cmd() {
         local script_name="$2"
         shift
         shift
-        _project_execute_script "$project_name" "$script_name" "$@"
+        _project_run_script "$project_name" "$project_path" "$script_name" "$@"
         ;;
 
       list)
@@ -122,8 +123,10 @@ _project_cmd() {
         fi
 
         _project_setup_project "$project_name" "$project_path"
-        _project_execute_script "$project_name" "start"
-        _project_print_url "http://$PROJECT_DOMAIN"
+        _project_run_script "$project_name" "$project_path" "start" "$@"
+        if [ ! -z "$PROJECT_DOMAIN" ]; then
+          _project_print_url "http://$PROJECT_DOMAIN"
+        fi
         ;;
 
       stop)
@@ -140,7 +143,7 @@ _project_cmd() {
         fi
 
         _project_setup_project "$project_name" "$project_path"
-        _project_execute_script "$project_name" "stop"
+        _project_run_script "$project_name" "$project_path" "stop" "$@"
         ;;
 
       end)
