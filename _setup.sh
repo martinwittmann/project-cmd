@@ -40,12 +40,10 @@ _project_setup() {
 
 _project_setup_project() {
   PROJECT_NAME="$1"
-  if [ -z $project_path ]; then
-    PROJECT_PATH=$(_project_get_project_path_by_name "$PROJECT_NAME")
-  fi
+  PROJECT_PATH=$(_project_get_project_path_by_name "$PROJECT_NAME")
 
   if [ $? -ne 0 ]; then
-    project_show_error "No project found."
+    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${PROJECT_NAME}${PROJECT_TEXT_RESET}\" not found."
     return 1
   fi
 
@@ -65,12 +63,9 @@ _project_setup_project() {
     SETUP_ERROR=1
   fi
 
-  #set -o allexport
   if [ -f "$PROJECT_ENV_FILENAME" ]; then
     . "$PROJECT_ENV_FILENAME"
   fi
-  #set +o allexport
-
 
   if [ $? -ne 0 ]; then
     project_show_error "Error sourcing env file \"$PROJECT_ENV_FILENAME\"."

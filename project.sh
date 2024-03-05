@@ -105,7 +105,7 @@ _project_cmd() {
         for project_path in "${!PROJECT_PROJECTS[@]}"; do
           local scripts_path=$(_project_get_scripts_path "$project_path")
           local project_name="${PROJECT_PROJECTS[$project_path]}"
-          _project_get_project_status "$project_name" "summary"
+          _project_get_project_status "$project_name" "$project_path" "short"
         done
         ;;
 
@@ -146,6 +146,23 @@ _project_cmd() {
         _project_run_script "$project_name" "$project_path" "stop" "$@"
         ;;
 
+      restart)
+        project_path=$(_project_get_project_path)
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
+        project_name=$(_project_get_project_name "$project_path")
+        if [ $? -ne 0 ]; then
+          project_show_error "$not_found_message"
+          return 1
+        fi
+
+        _project_setup_project "$project_name" "$project_path"
+        _project_run_script "$project_name" "$project_path" "restart" "$@"
+        ;;
+
       end)
         project_path=$(_project_get_project_path)
         if [ $? -ne 0 ]; then
@@ -160,7 +177,7 @@ _project_cmd() {
         fi
 
         _project_setup_project "$project_name" "$project_path"
-        _project_execute_script "$project_name" "end"
+        _project_run_script "$project_name" "end"
         ;;
 
       add)
@@ -185,12 +202,6 @@ _project_cmd() {
         sudo ln -s "$project_path" "$symlink"
         ;;
 
-      "")
-        _project_setup_project "$project_name"
-        _project_execute_script "$project_name" "status" "$@"
-        ;;
-
-
       remove)
         local project_name
         project_name="$2"
@@ -213,6 +224,11 @@ _project_cmd() {
         fi
 
         sudo unlink "/etc/project-cmd/projects.d/$project_name"
+        ;;
+
+      "")
+        _project_setup_project "$project_name"
+        _project_run_script "$project_name" "$project_path" "status"
         ;;
 
       *)

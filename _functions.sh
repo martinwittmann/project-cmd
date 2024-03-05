@@ -122,35 +122,27 @@ _project_run_script() {
   local project_name="$1"
   local project_path="$2"
   local script_name="$3"
+  shift
+  shift
+  shift
   local script_filename=$(_project_get_script_path "$project_path" "$script_name")
 
+  # We need to source the global scripts file to make sure these functions are
+  # available for project script files.
   local global_scripts="$__PROJECT_SCRIPT_PATH/_global-scripts.sh"
   source $global_scripts
+
   if [ -f "$script_filename" ]; then
     # We need to source the script file to make all our variables and commands /
     # functions available to the script.
-    source "$script_filename"
+
+    if [ "$project_name" == "$PROJECT_NAME" ]; then
+      source "$script_filename"
+    else
+      echo $(_project_setup_project "$project_name" && source "$script_filename")
+    fi
   else
-    project_show_error "$script_filename aaThe script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
-  fi
-}
-
-_project_execute_script() {
-  local project_name="$1"
-  local script_name="${2:-status}"
-  local show_errors="${3:-1}"
-  local function_name="_project_${project_name}_run_$script_name"
-
-  # Remove the first 2 arguments so we can pass the rest to the function call later.
-  shift
-  shift
-
-  _project_load_script "$project_name" "$script_name" "$show_errors"
-
-  if [ $? -eq 0 ]; then
-    eval "$function_name $@"
-  elif [ $show_errors -eq 1 ]; then
-    project_show_error "Error loading script $script_name."
+    project_show_error "$script_filename The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
   fi
 }
 
@@ -162,13 +154,13 @@ _project_get_project_names() {
 
 _project_get_project_status() {
   local project_name="$1"
+  local project_path="$2"
   local name_padding=$((10 - ${#project_name}))
-  local script_filename="$scripts_path/status.sh"
+  local script_filename=$(_project_get_script_path "$project_path" "status")
   local project_status
-  _project_load_script "$project_name" "status"
 
-  if [ $? -eq 0 ]; then
-    project_status=$(_project_execute_script "$project_name" "status" "summary")
+  if [ -f "$script_filename" ]; then
+    project_status=$(_project_run_script "$project_name" "$project_path" "status" "short")
   else
     project_status="${PROJECT_TEXT_GRAY}unknown$PROJECT_TEXT_RESET"
   fi
@@ -180,26 +172,32 @@ _project_get_project_status() {
   echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${name_padding}$PROJECT_TEXT_RESET $project_path${path_padding}$project_status"
 }
 
+project_get_docker_compose_path() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  echo $(_project_setup_project "$project_name" && echo "$PROJECT_PATH/docker-compose.${PROJECT_ENV}.yml")
+}
+
+project_uses_docker() {
+  if [ "$PROJECT_USE_DOCKER" == "1" ]; then
+    # Result code 0 is a success in bash.
+    return 0
+  else
+    return 1
+  fi
+}
+
+# Only call this in a sub-shell since this will overwrite all project variables
+# by calling project_setup_project
 _project_get_project_status_via_docker_compose() {
-  local project_name="$1"
-  local project_path=$(_project_get_project_path_by_name "$project_name")
+  local project_name="${1:-${PROJECT_NAME}}"
 
   # Output format can be "services" or "summary"
-  local output_format="${2:-services}"
-
-  if [ -z $COMPOSE_FILE ]; then
-    COMPOSE_FILE="docker-compose.yml"
-  fi
-
-  local compose_filename="$project_path/$COMPOSE_FILE"
-  local status=$(sudo docker compose -f "$compose_filename" ps --format '{{.Name}} {{.Status}}')
+  local output_format="${2:-summary}"
+  local compose_file=$(project_get_docker_compose_path)
+  local status=$(docker compose -f "$compose_file" ps --format '{{.Name}} {{.Status}}')
 
   local project_status="down"
   local all_services_up=true
-
-  if [[ "$output_format" == "services" ]]; then
-    echo -e "Containers for project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\":"
-  fi
 
   if [ -z "$status" ]; then
     if [[ "$output_format" == "services" ]]; then
@@ -235,6 +233,9 @@ _project_get_project_status_via_docker_compose() {
   fi
 
   if [[ "$output_format" == "summary" ]]; then
+    echo -n "All services are "
+    _project_status_output "$project_status"
+  elif [[ "$output_format" == "short" ]]; then
     _project_status_output "$project_status"
   fi
 }
@@ -281,5 +282,24 @@ _project_assert_env_var() {
   local value="${!env_var}"
   if [ -z "$value" ]; then
     project_show_error "The env variable \"\$${env_var}\" needs to be set for this command."
+  fi
+}
+
+project_start_docker() {
+  if project_uses_docker; then
+    if ! systemctl is-active --quiet docker; then
+      project_show_message "Docker is not running. Starting docker service..."
+      sudo systemctl start docker
+    fi
+  else
+    project_show_error "This project is not configured to use docker."
+  fi
+}
+
+project_is_production() {
+  if [ "$PROJECT_ENV" == "live" ] || [ "$PROJECT_ENV" == "production" ]; then
+    return 0
+  else
+    return 1
   fi
 }
