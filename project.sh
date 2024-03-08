@@ -11,18 +11,25 @@ _project_cmd() {
 
   local project_name=""
   local project_path=""
+  local project_tag=""
   local command=""
 
   # Parse options
-  while getopts ":p:" opt; do
+  while getopts ":p:t:" opt; do
     case $opt in
       p)
         project_name="$OPTARG"
         ;;
+
+      p)
+        project_tag="$OPTARG"
+        ;;
+
       \?)
         echo "Invalid option: -$OPTARG" >&2
         return 1
         ;;
+
       :)
         echo "Option -$OPTARG requires an argument." >&2
         return 1
@@ -119,7 +126,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_path"
+        _project_setup_project "$project_name" "$project_tag"
         local global_scripts="$__PROJECT_SCRIPT_PATH/_global-scripts.sh"
         source $global_scripts
         project_run_global_script compare_with_project "$2" "$3"
@@ -138,7 +145,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_path"
+        _project_setup_project "$project_name" "$project_tag"
         _project_run_script "$project_name" "end"
         ;;
 
@@ -193,7 +200,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_path"
+        _project_setup_project "$project_name" "$project_tag"
         _project_run_script "$project_name" "$project_path" "restart" "$@"
         ;;
 
@@ -210,7 +217,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_path"
+        _project_setup_project "$project_name" "$project_tag"
 
         local script_name="$2"
         shift
@@ -231,7 +238,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_path"
+        _project_setup_project "$project_name" "$project_tag"
         _project_run_script "$project_name" "$project_path" "start" "$@"
         if [ ! -z "$PROJECT_DOMAIN" ]; then
           _project_print_url "http://$PROJECT_DOMAIN"
@@ -251,13 +258,12 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_path"
+        _project_setup_project "$project_name" "$project_tag"
         _project_run_script "$project_name" "$project_path" "stop" "$@"
         ;;
 
-
       "")
-        _project_setup_project "$project_name"
+        _project_setup_project "$project_name" "$project_tag"
         _project_run_script "$project_name" "$project_path" "status"
         ;;
 

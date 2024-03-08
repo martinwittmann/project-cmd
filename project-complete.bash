@@ -10,21 +10,33 @@ _project_autocomplete() {
 
   local cur=${COMP_WORDS[COMP_CWORD]}
   local prev=${COMP_WORDS[COMP_CWORD-1]}
+  local prevprev=${COMP_WORDS[COMP_CWORD-2]}
+
+  local commands=("add" "build_global_docker_images" "cd" "compare_with_project" "end" "list" "remove" "restart" "run" "start" "stop" "tag")
+
+  case $prevprev in 
+    tag)
+      COMPREPLY=($(compgen -W "${commands[*]}" -- $cur))
+      ;;
+  esac
 
   case $prev in
 
-    "project" | "p")
+    project | p)
       # No project command was typed, list the available commands.
-      local options=("add" "build_global_docker_images" "cd" "compare_with_project" "end" "list" "remove" "restart" "run" "start" "stop")
-      COMPREPLY=($(compgen -W "${options[*]}" -- $cur))
+      COMPREPLY=($(compgen -W "${commands[*]}" -- $cur))
       ;;
 
-    "cd")
+    cd)
       _project_cd_autocomplete "$cur"
       ;;
 
-    "run")
+    run)
       _project_run_autocomplete "$cur"
+      ;;
+
+    tag)
+      _project_tag_autocomplete "$cur"
       ;;
   esac
 }
@@ -62,4 +74,13 @@ _project_run_autocomplete() {
   done
 
   COMPREPLY=($(compgen -W "${scripts[*]}" -- $cur))
+}
+
+_project_tag_autocomplete() {
+  local cur="$1"
+  local project_path=$(_project_get_project_path)
+  local env_file="$project_path/.env"
+  local tags=$(grep "^PROJECT_TAGS=" "$env_file" | cut -d'=' -f2)
+  IFS=',' read -r -a tags_list <<< "$tags"
+  COMPREPLY=($(compgen -W "${tags_list[*]}" -- $cur))
 }

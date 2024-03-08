@@ -35,11 +35,11 @@ _project_setup() {
       return 1
     fi
   fi
-
 }
 
 _project_setup_project() {
   PROJECT_NAME="$1"
+  PROJECT_TAG="$2"
   PROJECT_PATH=$(_project_get_project_path_by_name "$PROJECT_NAME")
 
   if [ $? -ne 0 ]; then
@@ -48,10 +48,10 @@ _project_setup_project() {
   fi
 
   _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
-  SCRIPTS_PATH=$(_project_get_scripts_path "$PROJECT_PATH")
+  local scripts_path=$(_project_get_scripts_path "$PROJECT_PATH")
 
   if [ $? -ne 0 ]; then
-    project_show_error "Project scripts directory \"$SCRIPTS_PATH\" not found."
+    project_show_error "Project scripts directory \"$scripts_path\" not found."
     SETUP_ERROR=1
   fi
 
@@ -69,6 +69,20 @@ _project_setup_project() {
 
   if [ $? -ne 0 ]; then
     project_show_error "Error sourcing env file \"$PROJECT_ENV_FILENAME\"."
+    SETUP_ERROR=1
+    return 1
+  fi
+
+  # Allow env files for tags to override variables.
+  local tag_env_file="$PROJECT_PATH/.env.$PROJECT_TAG"
+
+  if [ -f "$tag_env_file" ]; then
+    . "$tag_env_file"
+  fi
+
+
+  if [ $? -ne 0 ]; then
+    project_show_error "Error sourcing tag env file \"$tag_env_file\"."
     SETUP_ERROR=1
     return 1
   fi

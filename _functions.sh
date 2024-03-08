@@ -297,7 +297,7 @@ project_start_docker() {
 }
 
 project_is_production() {
-  if [ "$PROJECT_ENV" == "live" ] || [ "$PROJECT_ENV" == "production" ]; then
+  if [ "$PROJECT_ENV" == "live" ] || [ "$PROJECT_ENV" == "production" ] || [ "$PROJECT_ENV" == "prod" ]; then
     return 0
   else
     return 1
