@@ -15,7 +15,7 @@ _project_autocomplete() {
 
     "project" | "p")
       # No project command was typed, list the available commands.
-      local options=("cd" "list" "run" "start" "stop")
+      local options=("add" "build_global_docker_images" "cd" "compare_with_project" "end" "list" "remove" "restart" "run" "start" "stop")
       COMPREPLY=($(compgen -W "${options[*]}" -- $cur))
       ;;
 
