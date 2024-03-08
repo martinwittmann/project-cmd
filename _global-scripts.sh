@@ -53,6 +53,11 @@ _project_global_script_nginx_error() {
 }
 
 _project_global_script_drush() {
+  if [ ! -z "$PROJECT_TAG" ]; then
+
+  fi
+
+
   if project_uses_docker; then
     docker exec -it -u 1000 -w $PROJECT_PATH_IN_CONTAINER/web $PROJECT_NAME $PROJECT_PATH_IN_CONTAINER/vendor/bin/drush "$@"
   else
@@ -140,6 +145,23 @@ _project_global_script_enter() {
     project_show_error "This environment is configured not to use docker!"
     exit 1
   fi
+}
+
+_project_global_script_npm() {
+  local uid="$1"
+  local workdir="$2"
+  shift
+  shift
+
+  docker run \
+    -it \
+    --rm \
+    --user "$uid" \
+    --workdir "$workdir" \
+    --name "${PROJECT_CONTAINER_NAME}_npm" \
+    --volume "$PROJECT_PATH:$PROJECT_PATH_IN_CONTAINER" \
+    node:alpine \
+    npm "$@"
 }
 
 _project_global_script_vite() {
