@@ -126,6 +126,7 @@ to start a diff viewer. Depending on availability, meld, vimdiff, diff is being 
 
 ## Example project structure
 
+```
 ├── .project
 │   ├── docker
 │   │   ├── app
@@ -144,6 +145,10 @@ to start a diff viewer. Depending on availability, meld, vimdiff, diff is being 
 │   └── ...
 ├── .env
 └── docker-compose.dev.yml
+```
+
+
+## List of available commands
 
 - project list: Shows all registered projects and their status if available.
 - project cd project_name: Changes the current work dir to the project's location.
