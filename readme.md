@@ -4,21 +4,22 @@ Project cmd enables a standardized, opinionated and mostly technology-agnostic w
 Think of project-cmd as cli tool being a light-weight mashup of devcontainer.json that can also work without docker + vscode and npx that works for any language and in any (sub)directory of the project.
 For simple setups this can also be used to deploy apps.
 
-- Easy docker (+ compose) integration
+- Easy docker (compose) integration
 - Start, stop, restart each project in the same way (p start) regardless of the tech stack 
 - Run predefined (global) and custom scripts from any (sub)directory in the project: p run [script_name] - including bash completion for available scripts
 - List registered projects with their name, path and status (e.g. up, down)
 - Quickly change to any project directory with "p cd [project-name]"
 - Set up + configure your project via .env files
 - You can use env variables in your custom scripts - no setup needed
-- No complicated magic - it's just an easy wrapper for bash scripts
+- No complicated magic - it's just a light-weight wrapper for bash scripts
 
 
 # Use-case examples
 
 ## Project setup
-- Create a directory for your project or change into an existing project
-- Create a .env file:
+Create a directory for your project or change into an existing project.
+
+Create a .env file:
   ```
   PROJECT_NAME=my_project
   PROJECT_ENV=dev
@@ -29,7 +30,8 @@ For simple setups this can also be used to deploy apps.
   # Required for some global scripts and quite handy in docker compose files.
   PROJECT_PATH_IN_CONTAINER=/app
   ```
-- Create a docker-compose.dev.yml if you want to use docker
+
+Create a docker-compose.dev.yml if you want to use docker:
   ```
   services:
     app:
@@ -44,13 +46,12 @@ For simple setups this can also be used to deploy apps.
       extra_hosts:
         - host.docker.internal:host-gateway
       env_file:
-        # Makes all values of .env available as environment variables in
-        # this container.
+        # Makes all values of .env available as environment variables in this container.
         - .env
   ```
 
-- Create a .project/scripts directory and add scripts you need:
-  .project/scripts/start.sh
+Create a .project/scripts directory and add scripts you need:
+  E.g.: .project/scripts/start.sh:
   ```
   # If you're using docker then this will run docker compose with docker-compose.[PROJECT_ENV].yml
   project_run_global_script start
@@ -66,7 +67,7 @@ For simple setups this can also be used to deploy apps.
 - Restart `p restart` - you get it.
 
 ## Additional / custom scripts
-- Create .project/scripts/npm.sh
+Create .project/scripts/npm.sh:
   ```
   #!/bin/bash
 
@@ -83,7 +84,7 @@ For simple setups this can also be used to deploy apps.
     # $PROJECT_PATH_IN_CONTAINER is required for several global scripts but can
     # be omitted if you just use custom scripts.
   ```
-- Script names can contain alphanumeric and underscore characters and will be auto completed if a .sh file exists in .projet/scripts.
+Script names can contain alphanumeric and underscore characters and will be auto completed if a .sh file exists in .projet/scripts.
 
 ## Change to project
 Execute `p cd [project_name]`. Project names are auto completed.
