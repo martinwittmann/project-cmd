@@ -12,16 +12,22 @@ _project_cmd() {
   local project_name=""
   local project_path=""
   local project_tag=""
+  PROJECT_TAG=""
   local command=""
 
+
   # Parse options
+
+  # We need to reset OPTIND which should get written by getopts, but after
+  # using the -t option once it keeps having an incorrect value.
+  OPTIND=1
   while getopts ":p:t:" opt; do
     case $opt in
       p)
         project_name="$OPTARG"
         ;;
 
-      p)
+      t)
         project_tag="$OPTARG"
         ;;
 
@@ -58,7 +64,7 @@ _project_cmd() {
   fi
 
   . "$__PROJECT_SCRIPT_PATH/_setup.sh"
-  _project_setup
+  _project_setup "" "$project_tag"
   
   if [ ! -z "$PROJECT_PATH" ]; then
     project_name="$PROJECT_NAME"
@@ -126,7 +132,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_tag"
+        _project_setup_project "$project_name"
         local global_scripts="$__PROJECT_SCRIPT_PATH/_global-scripts.sh"
         source $global_scripts
         project_run_global_script compare_with_project "$2" "$3"
@@ -145,7 +151,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_tag"
+        _project_setup_project "$project_name"
         _project_run_script "$project_name" "end"
         ;;
 
@@ -200,7 +206,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_tag"
+        _project_setup_project "$project_name"
         _project_run_script "$project_name" "$project_path" "restart" "$@"
         ;;
 
@@ -217,7 +223,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_tag"
+        _project_setup_project "$project_name"
 
         local script_name="$2"
         shift
@@ -238,7 +244,7 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_tag"
+        _project_setup_project "$project_name"
         _project_run_script "$project_name" "$project_path" "start" "$@"
         if [ ! -z "$PROJECT_DOMAIN" ]; then
           _project_print_url "http://$PROJECT_DOMAIN"
@@ -258,12 +264,12 @@ _project_cmd() {
           return 1
         fi
 
-        _project_setup_project "$project_name" "$project_tag"
+        _project_setup_project "$project_name"
         _project_run_script "$project_name" "$project_path" "stop" "$@"
         ;;
 
       "")
-        _project_setup_project "$project_name" "$project_tag"
+        _project_setup_project "$project_name"
         _project_run_script "$project_name" "$project_path" "status"
         ;;
 

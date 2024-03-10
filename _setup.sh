@@ -21,6 +21,7 @@ _project_setup() {
   PROJECT_PROJECTS=()
 
   PROJECT_NAME="$1"
+  PROJECT_TAG="$2"
 
   # We need to declare it as global.
   _project_populate_projects_array
@@ -39,7 +40,6 @@ _project_setup() {
 
 _project_setup_project() {
   PROJECT_NAME="$1"
-  PROJECT_TAG="$2"
   PROJECT_PATH=$(_project_get_project_path_by_name "$PROJECT_NAME")
 
   if [ $? -ne 0 ]; then

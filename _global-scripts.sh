@@ -53,15 +53,16 @@ _project_global_script_nginx_error() {
 }
 
 _project_global_script_drush() {
+  echo "$WITTI"
+  local location_prefix=""
   if [ ! -z "$PROJECT_TAG" ]; then
-
+    location_prefix=" -l $PROJECT_URL "
   fi
 
-
   if project_uses_docker; then
-    docker exec -it -u 1000 -w $PROJECT_PATH_IN_CONTAINER/web $PROJECT_NAME $PROJECT_PATH_IN_CONTAINER/vendor/bin/drush "$@"
+    docker exec -it -u 1000 -w $PROJECT_PATH_IN_CONTAINER/web $PROJECT_NAME $PROJECT_PATH_IN_CONTAINER/vendor/bin/drush$location_prefix "$@"
   else
-    $PROJECT_PATH/vendor/bin/drush $@
+    $PROJECT_PATH/vendor/bin/drush$location_prefix $@
   fi
 }
 
@@ -73,8 +74,21 @@ _project_global_script_mysql() {
   fi
 }
 
+_project_global_script_mysql_root() {
+  if [ "$PROJECT_USE_DOCKER" == "1" ]; then
+    docker exec -it $PROJECT_DB_CONTAINER_NAME mariadb -uroot -p$PROJECT_DB_ROOT_PASSWORD -h$PROJECT_DB_HOST "$@"
+  else
+    mysql -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD -h$PROJECT_DB_HOST $PROJECT_DB_NAME "$@"
+  fi
+}
+
 _project_global_script_mysql_dump() {
   local backup_path=$(realpath $PROJECT_PATH/.project/dumps)
+  if [ ! -z "$PROJECT_TAG" ]; then
+    backup_path="$backup_path/$PROJECT_TAG"
+    mkdir -p "$backup_path"
+  fi
+
   local date=$(date +%F--%H-%M)
   local dump_file="${backup_path}/${date}--${PROJECT_NAME}_${PROJECT_ENV}.sql"
   # Strip the project path from the beginngin of $dump_file.
