@@ -1,0 +1,5 @@
+location ^~ /.well-known/ {
+ allow all;
+ add_header Content-Type text/plain;
+ alias {{ well_known_webroot|default('/srv/well-known/' ~ $domain ~ '/.well-known/') }};
+}

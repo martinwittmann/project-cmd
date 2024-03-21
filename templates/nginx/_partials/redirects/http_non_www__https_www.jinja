@@ -1,0 +1,15 @@
+# Redirect non-www over http to https with www.
+server {
+  server_name {{ domain }};
+  listen 80;
+  http2 on;
+
+  access_log off;
+  {% include '_partials/error_log.ninja' %}
+  {% include '_partials/ssl.ninja' %}
+  {% include '_partials/acme_challenge.ninja' %}
+
+  location / {
+    return 301 https://www.$server_name$request_uri;
+  }
+}

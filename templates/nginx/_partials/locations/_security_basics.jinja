@@ -1,0 +1,14 @@
+# Very rarely should these ever be publicly accessible.
+location ~* \.log$ {
+  deny all;
+}
+
+location ~ \..*/.*\.php$ {
+  return 403;
+}
+
+# Block access to "hidden" files and directories whose names begin with a
+# period. This includes directories used by version control systems.
+location ~ (^|/)\. {
+  return 403;
+}
