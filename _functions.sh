@@ -66,6 +66,7 @@ _project_get_project_name() {
   fi
 }
 
+# All messages are written to stderr to not pollute stdout.
 project_show_error() {
   echo -e "$PROJECT_STATUS_ERROR $1" >&2
 }
@@ -122,9 +123,7 @@ _project_run_script() {
   local project_name="$1"
   local project_path="$2"
   local script_name="$3"
-  shift
-  shift
-  shift
+  shift 3
   local script_filename=$(_project_get_script_path "$project_path" "$script_name")
 
   # We need to source the global scripts file to make sure these functions are
@@ -286,7 +285,8 @@ _project_assert_env_var() {
 }
 
 project_start_docker() {
-  if project_uses_docker; then
+  local force_start="${1:-0}"
+  if project_uses_docker || [ "$force_start" -eq 1 ]; then
     if ! systemctl is-active --quiet docker; then
       project_show_message "Docker is not running. Starting docker service..."
       sudo systemctl start docker
@@ -302,4 +302,135 @@ project_is_production() {
   else
     return 1
   fi
+}
+
+project_build_global_docker_images() {
+  local dirnames="$1"
+  if [ -z "$dirnames" ]; then
+    project_show_error "You need to specify directory names, separated by ';' for which docker images will be built."
+    return 1
+  fi
+  local env="${2:-prod}"
+  local basepath="${3:-${__PROJECT_SCRIPT_PATH}/docker/${dirname}}"
+
+  if [ ! -d "$basepath" ]; then
+    project_show_error "Directory \"${PROJECT_TEXT_YELLOW}${basepath}$PROJECT_TEXT_RESET\" not found."
+    return 1
+  fi
+
+  # For each directory in ./docker we build the corresponding docker container,
+  # if a Dockerfile exists.
+  project_start_docker 1
+
+  IFS=';'
+  for dirname in $dirnames; do
+    project_build_global_docker_image "$dirname" "$env" "$basepath"
+  done
+  unset IFS
+}
+project_build_global_docker_image() {
+  project_start_docker 1
+  local dirname="$1"
+  local env="${2:-prod}"
+  local basepath="${3:-${__PROJECT_SCRIPT_PATH}/docker/${dirname}}"
+  local fullpath="$basepath/$dirname"
+
+  if [ ! -d "$basepath" ]; then
+    project_show_error "Directory \"${PROJECT_TEXT_YELLOW}${basepath}$PROJECT_TEXT_RESET\" not found. Skipping."
+    echo ""
+    exit 1
+  fi
+
+  if [ ! -d "$fullpath" ]; then
+    project_show_error "Directory \"${PROJECT_TEXT_YELLOW}${fullpath}$PROJECT_TEXT_RESET\" not found. Skipping."
+    echo ""
+    exit 1
+  fi
+
+  project_show_message "Building image schwerpunkt/$dirname:$env..."
+  docker build --build-arg APP_ENV=$env -t schwerpunkt/$dirname:$env "$fullpath"
+  project_show_success "Done."
+  echo ""
+}
+
+project_check_jinja2_availability() {
+  # Since the original j2cli seems to by abandoned and its documentation refers
+  # to https://github.com/mattrobenolt/jinja2-cli - we use this.
+
+  if [ "$(type -t jinja2)" != "file" ]; then
+    project_show_error "Jinja2 templating needs to be installed for templating to work in project-cmd.\n
+    This is based on python 3 and can be installed via pip.
+    On debian-based systems you can install it with 'apt-get update && apt-get install python3-pip' and\n
+    'pip install jinja2-cli'.
+    "
+  fi
+}
+
+project_render_template() {
+  local template_arg="$1"
+  local template_file="$1"
+  shift
+
+  local template_argument_format="[project_name]:[path]/[to]/[template]"
+
+  if [ -z "$template_file" ]; then
+    project_show_error -e "$PROJECT_STATUS_ERROR You need to specify a template in the form \"${PROJECT_TEXT_YELLOW}${template_argument_format}${PROJECT_TEXT_RESET}\" as first argument."
+    return 1;
+  fi
+
+  # Extract part before the first ':'.
+  local other_project_name="${template_file%%:*}"
+
+  # Remove the everything up until the first ':' from the original string.
+  template_file="${template_file#*:}"
+
+  if [ -z "$other_project_name" ] || [ -z "$template_file" ]; then
+    project_show_error "Invalid template argument \"${PROJECT_TEXT_YELLOW}${template_arg}${PROJECT_TEXT_RESET}\".\nPlease use the format \"${PROJECT_TEXT_YELLOW}${template_argument_format}${PROJECT_TEXT_RESET}\" and make sure the project and the corresponding path ([project_name]/.project/templates/[template]/path) exists."
+    return 1
+  fi
+
+  # Resolve the template file
+  local other_project_path
+  other_project_path=$(_project_get_project_path_by_name "$other_project_name")
+
+  # Add the extension if it wasn't added already.
+  if [[ "$template_file" != *".jinja" ]]; then
+    template_file="${template_file}.jinja"
+  fi
+  local templates_path
+  templates_path=$(realpath "$other_project_path/.project/templates")
+  template_file="$templates_path/$template_file"
+
+  if [ ! -f "$template_file" ]; then
+    project_show_error "Cannot find template \"${PROJECT_TEXT_YELLOW}${template_file}${PROJECT_TEXT_RESET}\"."
+    return 1
+  fi
+
+  # Create an options string with all given arguments as variables to pass to
+  # jinja2. We're using strict to make jinja throw errors for undefined variables
+  # that do not use the default filter. This allows us to know if any variables
+  # without default values (=required variables) are missing.
+  local jinja_arguments=()
+  while [[ $# -gt 0 ]]; do
+    local key="$1"
+    local value="$2"
+
+    if [ -z "$key" ]; then
+      project_show_error "You need to provide arguments in sets of 2 for key and value. There is an empty key arguments."
+      return 1
+    fi
+
+    if [ -z "$value" ]; then
+      project_show_warning "Empty value for key \"${PROJECT_TEXT_YELLOW}${key}${PROJECT_TEXT_RESET}\"."
+    fi
+    jinja_arguments+=('-D')
+    jinja_arguments+=("$key=$value")
+    shift 2  # Shift to the next pair
+  done
+
+  printf -v jinja_arguments_string "%q " "${jinja_arguments[@]}"
+  (
+    cd "$templates_path" || return 1
+    jinja2 --strict "$template_file" "${jinja_arguments[@]}"
+  )
 }

@@ -102,9 +102,8 @@ _project_cmd() {
         ;;
 
       build_global_docker_images)
-        local global_scripts="$__PROJECT_SCRIPT_PATH/_global-scripts.sh"
-        source $global_scripts
-        project_run_global_script build_global_docker_images
+        shift
+        project_build_global_docker_images "$@"
         ;;
 
       cd)
@@ -226,8 +225,7 @@ _project_cmd() {
         _project_setup_project "$project_name"
 
         local script_name="$2"
-        shift
-        shift
+        shift 2
         _project_run_script "$project_name" "$project_path" "$script_name" "$@"
         ;;
 

@@ -2,6 +2,9 @@
 
 
 _project_setup() {
+  # Add our own .env variables.
+  . $__PROJECT_SCRIPT_PATH/.env
+
   SETUP_ERROR=0
 
   # Set up variables for easy text formatting.
@@ -80,9 +83,20 @@ _project_setup_project() {
     . "$tag_env_file"
   fi
 
-
   if [ $? -ne 0 ]; then
     project_show_error "Error sourcing tag env file \"$tag_env_file\"."
+    SETUP_ERROR=1
+    return 1
+  fi
+
+  # TODO Is there a better place to do this?
+  local project_script_include="$PROJECT_PATH/.project/scripts/_include.sh"
+  if [ -f "$project_script_include" ]; then
+    . "$project_script_include"
+  fi
+
+  if [ $? -ne 0 ]; then
+    project_show_error "Error sourcing project script include \"$project_script_include\"."
     SETUP_ERROR=1
     return 1
   fi

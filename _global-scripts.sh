@@ -53,7 +53,6 @@ _project_global_script_nginx_error() {
 }
 
 _project_global_script_drush() {
-  echo "$WITTI"
   local location_prefix=""
   if [ ! -z "$PROJECT_TAG" ]; then
     location_prefix=" -l $PROJECT_URL "
@@ -164,8 +163,7 @@ _project_global_script_enter() {
 _project_global_script_npm() {
   local uid="$1"
   local workdir="$2"
-  shift
-  shift
+  shift 2
 
   docker run \
     -it \
@@ -281,9 +279,23 @@ _project_global_script_update_drupal_core() {
   project_run_global_script composer update "drupal/core-*" --with-all-dependencies
 }
 
-_project_global_script_build_global_docker_images() {
-  local php81="$__PROJECT_SCRIPT_PATH/docker/php-8.1"
-  docker build --build-arg APP_ENV=dev -t schwerpunkt/php-8.1:dev "$php81"
-  docker build --build-arg APP_ENV=prod -t schwerpunkt/php-8.1:prod "$php81"
-  docker build -t schwerpunkt/mariadb "$__PROJECT_SCRIPT_PATH/docker/mariadb"
+_project_create_nginx_config() {
+  local output_file="$1"
+  # '^^' Makes the value of PROJECT_ENV all caps.
+  local env_var_name="PROJECT_NGINX_TEMPLATE_${PROJECT_ENV^^}"
+
+  # Get the value of a variable whose name is store in env_var_name.
+  local template
+  template="${!env_var_name}"
+
+  project_render_template "$template"\
+   container_name "$PROJECT_CONTAINER_NAME"\
+   container_port "$PROJECT_CONTAINER_PORT"\
+   domain "$PROJECT_DOMAIN"\
+   root_in_container "$PROJECT_PATH_IN_CONTAINER/web"\
+  > $output_file
+
+  if [ $? -eq 0 ]; then
+    project_show_success "Created nginx configuration \"${PROJECT_TEXT_YELLOW}${output_file}${PROJECT_TEXT_RESET}\"."
+  fi
 }
