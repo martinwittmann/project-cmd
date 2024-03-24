@@ -108,9 +108,7 @@ _project_cmd() {
 
       cd)
         project_name="$2"
-        project_path=$(_project_get_project_path_by_name "$project_name")
-
-        if [ $? -ne 0 ]; then
+        if ! project_path=$(_project_get_project_path_by_name "$project_name"); then
           project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
           return 1
         fi

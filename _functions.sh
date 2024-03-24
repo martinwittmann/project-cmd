@@ -124,7 +124,8 @@ _project_run_script() {
   local project_path="$2"
   local script_name="$3"
   shift 3
-  local script_filename=$(_project_get_script_path "$project_path" "$script_name")
+  local script_filename
+  script_filename=$(_project_get_script_path "$project_path" "$script_name")
 
   # We need to source the global scripts file to make sure these functions are
   # available for project script files.
@@ -138,7 +139,7 @@ _project_run_script() {
     if [ "$project_name" == "$PROJECT_NAME" ]; then
       source "$script_filename"
     else
-      echo $(_project_setup_project "$project_name" && source "$script_filename")
+      echo "$(_project_setup_project "$project_name" && source "$script_filename")"
     fi
   else
     project_show_error "$script_filename The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
@@ -366,23 +367,13 @@ project_check_jinja2_availability() {
   fi
 }
 
-project_render_template() {
+project_get_template_filename() {
   local template_arg="$1"
-  local template_file="$1"
-  shift
-
-  local template_argument_format="[project_name]:[path]/[to]/[template]"
-
-  if [ -z "$template_file" ]; then
-    project_show_error -e "$PROJECT_STATUS_ERROR You need to specify a template in the form \"${PROJECT_TEXT_YELLOW}${template_argument_format}${PROJECT_TEXT_RESET}\" as first argument."
-    return 1;
-  fi
-
   # Extract part before the first ':'.
-  local other_project_name="${template_file%%:*}"
+  local other_project_name="${template_arg%%:*}"
 
   # Remove the everything up until the first ':' from the original string.
-  template_file="${template_file#*:}"
+  template_file="${template_arg#*:}"
 
   if [ -z "$other_project_name" ] || [ -z "$template_file" ]; then
     project_show_error "Invalid template argument \"${PROJECT_TEXT_YELLOW}${template_arg}${PROJECT_TEXT_RESET}\".\nPlease use the format \"${PROJECT_TEXT_YELLOW}${template_argument_format}${PROJECT_TEXT_RESET}\" and make sure the project and the corresponding path ([project_name]/.project/templates/[template]/path) exists."
@@ -399,7 +390,23 @@ project_render_template() {
   fi
   local templates_path
   templates_path=$(realpath "$other_project_path/.project/templates")
-  template_file="$templates_path/$template_file"
+
+  echo "$templates_path/$template_file"
+}
+
+project_render_template() {
+  local template_arg="$1"
+  shift
+
+  local template_argument_format="[project_name]:[path]/[to]/[template]"
+
+  if [ -z "$template_arg" ]; then
+    project_show_error -e "$PROJECT_STATUS_ERROR You need to specify a template in the form \"${PROJECT_TEXT_YELLOW}${template_argument_format}${PROJECT_TEXT_RESET}\" as first argument."
+    return 1;
+  fi
+
+  local template_file
+  template_file=$(project_get_template_filename "$template_arg")
 
   if [ ! -f "$template_file" ]; then
     project_show_error "Cannot find template \"${PROJECT_TEXT_YELLOW}${template_file}${PROJECT_TEXT_RESET}\"."
@@ -428,7 +435,6 @@ project_render_template() {
     shift 2  # Shift to the next pair
   done
 
-  printf -v jinja_arguments_string "%q " "${jinja_arguments[@]}"
   (
     cd "$templates_path" || return 1
     jinja2 --strict "$template_file" "${jinja_arguments[@]}"

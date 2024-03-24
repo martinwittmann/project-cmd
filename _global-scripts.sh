@@ -6,6 +6,7 @@ project_run_global_script() {
 
   if [ -z "$script_name" ]; then
     project_show_error "You need to provide a script name."
+    return 1
   fi
 
   local function_name="_project_global_script_$script_name"
@@ -23,6 +24,7 @@ _project_global_script_start() {
     docker compose -f "$compose_file" up -d --remove-orphans
   else
     project_show_error "I don\'t know how to start project \"${PROJECT_TEXT_YELLOW}${PROJECT_NAME}${PROJECT_TEXT_RESET}\" since it is not configured to use docker and no start script is specified."
+    return 1
   fi
 }
 
@@ -32,6 +34,7 @@ _project_global_script_stop() {
     docker compose -f "$compose_file" down
   else
     project_show_error "I don\'t know how to stop this project since it is not configured to use docker and no start script is specified."
+    return 1
   fi
 }
 
@@ -88,9 +91,10 @@ _project_global_script_mysql_dump() {
     mkdir -p "$backup_path"
   fi
 
-  local date=$(date +%F--%H-%M)
+  local date
+  date=$(date +%F--%H-%M)
   local dump_file="${backup_path}/${date}--${PROJECT_NAME}_${PROJECT_ENV}.sql"
-  # Strip the project path from the beginngin of $dump_file.
+  # Strip the project path from the beginning of $dump_file.
   local short_name="${dump_file#$PROJECT_PATH}"
 
   echo -e "Creating database dump at \"${PROJECT_TEXT_YELLOW}${short_name}${PROJECT_TEXT_RESET}\"..."
@@ -114,15 +118,16 @@ _project_global_script_import_mysql_dump() {
   fi
 
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
-    docker exec -i $PROJECT_DB_CONTAINER_NAME mariadb -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME -h$PROJECT_DB_CONTAINER_NAME < $dump_file
+    docker exec -i $PROJECT_DB_CONTAINER_NAME mariadb -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME -h$PROJECT_DB_CONTAINER_NAME < "$dump_file"
   else
-    mariadb -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME -h$PROJECT_DB_CONTAINER_NAME < $dump_file
+    mariadb -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME -h$PROJECT_DB_CONTAINER_NAME < "$dump_file"
   fi 
 }
 
 _project_global_script_list_mysql_dumps() {
-dump_file local dumps_path=$(realpath $PROJECT_PATH/.project/dumps)
-  ls -lh $dumps_path | tail -n +2 | while read -r line; do
+  local dumps_path
+  dumps_path=$(realpath "$PROJECT_PATH/.project/dumps")
+  ls -lh "$dumps_path" | tail -n +2 | while read -r line; do
     # Extract file name
     file=$(echo "$line" | awk '{print $9 " (" $5 ")"}')
 
@@ -156,7 +161,7 @@ _project_global_script_enter() {
     docker exec -it -u 1000 -w $PROJECT_PATH_IN_CONTAINER $PROJECT_NAME /bin/bash
   else
     project_show_error "This environment is configured not to use docker!"
-    exit 1
+    return 1
   fi
 }
 
@@ -201,7 +206,7 @@ _project_global_script_rebuild_containers() {
     fi
   else
     project_show_error "This environment is configured not to use docker!"
-    exit 1
+    return 1
   fi
 }
 
@@ -226,7 +231,8 @@ _project_global_script_compare_with_project() {
   filename=$(realpath "$relative_filename")
 
   # Normalize relative_name to be relative to $PROJECT_PATH.
-  local project_path=$(_project_get_project_path)
+  local project_path
+  project_path=$(_project_get_project_path)
   relative_filename="${filename#$project_path}"
 
   if [ ! -f "$filename" ] && [ ! -d "$filename" ]; then
@@ -279,21 +285,33 @@ _project_global_script_update_drupal_core() {
   project_run_global_script composer update "drupal/core-*" --with-all-dependencies
 }
 
-_project_create_nginx_config() {
-  local output_file="$1"
-  # '^^' Makes the value of PROJECT_ENV all caps.
-  local env_var_name="PROJECT_NGINX_TEMPLATE_${PROJECT_ENV^^}"
+# Create
+_project_global_script_create_nginx_config() {
+  local template="$1"
+  local output_file="$2"
+  local overwrite_existing="${3:-0}"
 
-  # Get the value of a variable whose name is store in env_var_name.
-  local template
-  template="${!env_var_name}"
+  # If no template was provided try to get it from an environment variable.
+  if [ -z "$template" ]; then
+    template="$PROJECT_NGINX_TEMPLATE"
+
+    if [ -z "$template" ]; then
+      project_show_error "Project-cmd global script \"create_nginx_config\": You need to provide either a template as second argument or set the PROJECT_NGINX_TEMPLATE environment variable in the project for which the template should be generated."
+      return 1
+    fi
+  fi
+
+  if [ -f "$output_file" ] && [ "$overwrite_existing" -eq 0 ]; then
+    project_show_error "The output file \"${PROJECT_TEXT_YELLOW}${output_file}${PROJECT_TEXT_RESET}\" already exists.\nSet the third argument of the create_nginx_config global script to 1 to allow overwriting it."
+    return 1
+  fi
 
   project_render_template "$template"\
    container_name "$PROJECT_CONTAINER_NAME"\
    container_port "$PROJECT_CONTAINER_PORT"\
    domain "$PROJECT_DOMAIN"\
    root_in_container "$PROJECT_PATH_IN_CONTAINER/web"\
-  > $output_file
+  > "$output_file"
 
   if [ $? -eq 0 ]; then
     project_show_success "Created nginx configuration \"${PROJECT_TEXT_YELLOW}${output_file}${PROJECT_TEXT_RESET}\"."
