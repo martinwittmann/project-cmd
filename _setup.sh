@@ -79,7 +79,7 @@ _project_setup_project() {
   # Allow env files for tags to override variables.
   local tag_env_file="$PROJECT_PATH/.env.$PROJECT_TAG"
 
-  if [ -f "$tag_env_file" ]; then
+  if [ -n "$PROJECT_TAG" ] && [ -f "$tag_env_file" ]; then
     . "$tag_env_file"
   fi
 

@@ -66,7 +66,7 @@ _project_cmd() {
   . "$__PROJECT_SCRIPT_PATH/_setup.sh"
   _project_setup "" "$project_tag"
   
-  if [ ! -z "$PROJECT_PATH" ]; then
+  if [ -n "$PROJECT_PATH" ]; then
     project_name="$PROJECT_NAME"
     project_path="$PROJECT_PATH"
   fi
@@ -150,6 +150,12 @@ _project_cmd() {
 
         _project_setup_project "$project_name"
         _project_run_script "$project_name" "end"
+        ;;
+
+      get_env_value)
+        shift
+        local variable_name="$1"
+        _project_get_env_value "$PROJECT_NAME" "$variable_name"
         ;;
 
 
@@ -242,7 +248,7 @@ _project_cmd() {
 
         _project_setup_project "$project_name"
         _project_run_script "$project_name" "$project_path" "start" "$@"
-        if [ ! -z "$PROJECT_DOMAIN" ]; then
+        if [ -n "$PROJECT_DOMAIN" ]; then
           _project_print_url "http://$PROJECT_DOMAIN"
         fi
         ;;

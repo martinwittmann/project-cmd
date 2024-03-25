@@ -19,7 +19,9 @@ _project_global_script_start() {
       sudo systemctl start docker
     fi
 
-    local compose_file=$(project_get_docker_compose_path)
+    local compose_file
+    compose_file=$(project_get_docker_compose_path)
+
     # We always daemonize and remove orphans to not accumulate old containers.
     docker compose -f "$compose_file" up -d --remove-orphans
   else
@@ -30,10 +32,11 @@ _project_global_script_start() {
 
 _project_global_script_stop() {
   if project_uses_docker; then
-    local compose_file=$(project_get_docker_compose_path)
+    local compose_file
+    compose_file=$(project_get_docker_compose_path)
     docker compose -f "$compose_file" down
   else
-    project_show_error "I don\'t know how to stop this project since it is not configured to use docker and no start script is specified."
+    project_show_error "I don\'t know how to stop this project since it is not configured to use docker."
     return 1
   fi
 }
@@ -44,49 +47,50 @@ _project_global_script_restart() {
 }
 
 _project_global_script_root() {
-  docker exec -it --user root -w $PROJECT_PATH_IN_CONTAINER $PROJECT_NAME /bin/bash
+  docker exec -it --user root -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_NAME" /bin/bash
 }
 
 _project_global_script_nginx_access() {
-  tail -f .project/logs/nginx_access.log
+  tail -f "$PROJECT_PATH/.project/logs/${PROJECT_DOMAIN}_access.log"
 }
 
 _project_global_script_nginx_error() {
-  tail -f .project/logs/nginx_error.log
+  tail -f "$PROJECT_PATH/.project/logs/${PROJECT_DOMAIN}_error.log"
 }
 
 _project_global_script_drush() {
   local location_prefix=""
-  if [ ! -z "$PROJECT_TAG" ]; then
+  if [ -n "$PROJECT_TAG" ]; then
     location_prefix=" -l $PROJECT_URL "
   fi
 
   if project_uses_docker; then
-    docker exec -it -u 1000 -w $PROJECT_PATH_IN_CONTAINER/web $PROJECT_NAME $PROJECT_PATH_IN_CONTAINER/vendor/bin/drush$location_prefix "$@"
+    docker exec -it -u 1000 -w "$PROJECT_PATH_IN_CONTAINER/web" "$PROJECT_NAME" "$PROJECT_PATH_IN_CONTAINER/vendor/bin/drush$location_prefix" "$@"
   else
-    $PROJECT_PATH/vendor/bin/drush$location_prefix $@
+    "$PROJECT_PATH/vendor/bin/drush$location_prefix" "$@"
   fi
 }
 
 _project_global_script_mysql() {
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
-    docker exec -it $PROJECT_DB_CONTAINER_NAME mariadb -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD -h$PROJECT_DB_HOST $PROJECT_DB_NAME "$@"
+    docker exec -it "$PROJECT_DB_CONTAINER_NAME" mariadb -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" -h"$PROJECT_DB_HOST" "$PROJECT_DB_NAME" "$@"
   else
-    mysql -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD -h$PROJECT_DB_HOST $PROJECT_DB_NAME "$@"
+    mysql -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" -h"$PROJECT_DB_HOST" "$PROJECT_DB_NAME" "$@"
   fi
 }
 
 _project_global_script_mysql_root() {
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
-    docker exec -it $PROJECT_DB_CONTAINER_NAME mariadb -uroot -p$PROJECT_DB_ROOT_PASSWORD -h$PROJECT_DB_HOST "$@"
+    docker exec -it "$PROJECT_DB_CONTAINER_NAME" mariadb -uroot -p"$PROJECT_DB_ROOT_PASSWORD" -h"$PROJECT_DB_HOST" "$@"
   else
-    mysql -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD -h$PROJECT_DB_HOST $PROJECT_DB_NAME "$@"
+    mysql -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" -h"$PROJECT_DB_HOST" "$PROJECT_DB_NAME" "$@"
   fi
 }
 
 _project_global_script_mysql_dump() {
-  local backup_path=$(realpath $PROJECT_PATH/.project/dumps)
-  if [ ! -z "$PROJECT_TAG" ]; then
+  local backup_path
+  backup_path=$(realpath "$PROJECT_PATH/.project/dumps")
+  if [ -n "$PROJECT_TAG" ]; then
     backup_path="$backup_path/$PROJECT_TAG"
     mkdir -p "$backup_path"
   fi
@@ -99,13 +103,14 @@ _project_global_script_mysql_dump() {
 
   echo -e "Creating database dump at \"${PROJECT_TEXT_YELLOW}${short_name}${PROJECT_TEXT_RESET}\"..."
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
-    docker exec -it $PROJECT_DB_CONTAINER_NAME mariadb-dump -h$PROJECT_DB_HOST -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME > $dump_file
+    docker exec -it "$PROJECT_DB_CONTAINER_NAME" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   else
-    mariadb-dump -h$PROJECT_DB_HOST -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME > $dump_file
+    mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   fi
 
   if [ $? -eq 0 ]; then
-    local size=`du -h $dump_file | cut -f -1`
+    local size
+    size=$(du -h "$dump_file" | cut -f -1)
     project_show_success "Created db dump: $short_name ($size)."
   fi
 }
@@ -118,9 +123,9 @@ _project_global_script_import_mysql_dump() {
   fi
 
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
-    docker exec -i $PROJECT_DB_CONTAINER_NAME mariadb -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME -h$PROJECT_DB_CONTAINER_NAME < "$dump_file"
+    docker exec -i "$PROJECT_DB_CONTAINER_NAME" mariadb -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" -h"$PROJECT_DB_CONTAINER_NAME" < "$dump_file"
   else
-    mariadb -u$PROJECT_DB_USER -p$PROJECT_DB_PASSWORD $PROJECT_DB_NAME -h$PROJECT_DB_CONTAINER_NAME < "$dump_file"
+    mariadb -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" -h"$PROJECT_DB_CONTAINER_NAME" < "$dump_file"
   fi 
 }
 
@@ -138,9 +143,9 @@ done
 
 _project_global_script_composer() {
   if project_uses_docker; then
-    docker exec -u 1000 -it -w $PROJECT_PATH_IN_CONTAINER $PROJECT_CONTAINER_NAME composer "$@"
+    docker exec -u 1000 -it -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_CONTAINER_NAME" composer "$@"
   else
-    $PROJECT_COMPOSER_BIN_ON_HOST "$@"
+    "$PROJECT_COMPOSER_BIN_ON_HOST" "$@"
   fi
 }
 
@@ -158,7 +163,7 @@ _project_global_script_build_theme() {
 
 _project_global_script_enter() {
   if project_uses_docker; then
-    docker exec -it -u 1000 -w $PROJECT_PATH_IN_CONTAINER $PROJECT_NAME /bin/bash
+    docker exec -it -u 1000 -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_NAME" /bin/bash
   else
     project_show_error "This environment is configured not to use docker!"
     return 1
@@ -188,7 +193,7 @@ _project_global_script_vite() {
     --user "$PROJECT_CONTAINER_UID" \
     --workdir "$PROJECT_PATH_IN_CONTAINER/$PROJECT_NPM_ROOT" \
     --name "${PROJECT_CONTAINER_NAME}_npm" \
-    -p $PROJECT_VITE_PORT_ON_HOST:$PROJECT_VITE_PORT \
+    -p "$PROJECT_VITE_PORT_ON_HOST:$PROJECT_VITE_PORT" \
     --volume "$PROJECT_PATH:$PROJECT_PATH_IN_CONTAINER" \
     node:alpine \
     npm run start
@@ -197,7 +202,8 @@ _project_global_script_vite() {
 _project_global_script_rebuild_containers() {
   if project_uses_docker; then
     local container_name="$1"
-    local compose_file=$(project_get_docker_compose_path)
+    local compose_file
+    compose_file=$(project_get_docker_compose_path)
 
     if [ -z "$container_name" ]; then
       docker compose -f "$compose_file" build app
@@ -245,7 +251,8 @@ _project_global_script_compare_with_project() {
     return 1
   fi
 
-  local other_project_path=$(_project_get_project_path_by_name "$project_name")
+  local other_project_path
+  other_project_path=$(_project_get_project_path_by_name "$project_name")
   local filename_in_other_project="$other_project_path/$relative_filename"
 
   if [ ! -f "$filename_in_other_project" ] && [ ! -d "$filename_in_other_project" ]; then
@@ -258,8 +265,8 @@ _project_global_script_compare_with_project() {
 
 _project_global_script_create_drupal_hash_salt() {
   local do_write=false
-  if [ ! -z "$PROJECT_DRUPAL_HASH_SALT" ]; then
-    project_show_warning "POJECT_DRUPAL_HASH_SALT is currently not empty: $PROJECT_DRUPAL_HASH_SALT"
+  if [ -n "$PROJECT_DRUPAL_HASH_SALT" ]; then
+    project_show_warning "PROJECT_DRUPAL_HASH_SALT is currently not empty: $PROJECT_DRUPAL_HASH_SALT"
     read -p "Create a new one and overwrite it? (y/n): " overwrite
 
     case "$overwrite" in
@@ -273,7 +280,8 @@ _project_global_script_create_drupal_hash_salt() {
     esac
 
     if $do_write; then
-      local hash_salt=$(project_run_global_script drush php:eval 'echo \Drupal\Component\Utility\Crypt::randomBytesBase64(55) . "\n";')
+      local hash_salt
+      hash_salt=$(project_run_global_script drush php:eval 'echo \Drupal\Component\Utility\Crypt::randomBytesBase64(55) . "\n";')
       sed -i "s/^PROJECT_DRUPAL_HASH_SALT.*/PROJECT_DRUPAL_HASH_SALT=$hash_salt/" .env
       project_show_success "Set PROJECT_DRUPAL_HASH_SALT to ${hash_salt}"
     fi
@@ -306,14 +314,78 @@ _project_global_script_create_nginx_config() {
     return 1
   fi
 
+  # Project domain needs to be retrieved via _project_get_env_value to respect
+  # project tags.
+  local project_domain
+  project_domain=$(_project_get_env_value "$project_name" PROJECT_DOMAIN)
+
+  # TODO This feels messy, maybe find a cleaner way to do this.
   project_render_template "$template"\
    container_name "$PROJECT_CONTAINER_NAME"\
    container_port "$PROJECT_CONTAINER_PORT"\
-   domain "$PROJECT_DOMAIN"\
-   root_in_container "$PROJECT_PATH_IN_CONTAINER/web"\
+   domain "$project_domain"\
+   path_in_container "${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${project_domain]}}"\
   > "$output_file"
 
   if [ $? -eq 0 ]; then
     project_show_success "Created nginx configuration \"${PROJECT_TEXT_YELLOW}${output_file}${PROJECT_TEXT_RESET}\"."
   fi
+}
+
+_project_global_script_update_php_env() {
+  _project_update_php_env "$@"
+}
+
+_project_global_script_create_nginx_config_for_project() {
+  local project_name="$1"
+  local template="$2"
+  local proxy_project_name="$3"
+  local allow_overwriting="${4:-0}"
+
+  if [ -z "$project_name" ]; then
+    project_show_error "You need to provide a project name."
+    return 1
+  fi
+
+  if ! _project_get_project_path_by_name "$project_name" > /dev/null; then
+    project_show_error "Project \"${PROJEXT_TEXT_YELLOW}${project_name}${PROJEXT_TEXT_RESET}\" Does not exist."
+    return 1
+  fi
+
+  local proxy_project_path
+  proxy_project_path=$(_project_get_project_path_by_name "$proxy_project_name")
+  local nginx_configs_dir
+  nginx_configs_dir=$(_project_get_env_value "$proxy_project_name" "PROJECT_NGINX_CONFIGS_DIR")
+
+  declare -a project_tags=()
+  _project_get_tags "$project_name" project_tags
+
+  local output_file
+  local project_domain
+  # If this project has tags.
+  if [ ${#project_tags[@]} -ne 0 ] && [ -z "$PROJECT_TAG" ]; then
+    # Update php env for all tags.
+    for project_tag in "${project_tags[@]}"; do
+      project_domain=$(_project_get_env_value "$project_name" PROJECT_DOMAIN "$project_tag")
+      output_file="$proxy_project_path/$nginx_configs_dir/$project_domain.conf"
+      PROJECT_TAG="$project_tag"
+      project_run_global_script "create_nginx_config" "$template" "$output_file" "$allow_overwriting"
+    done
+    # Reset project tag to not mess things up.
+    PROJECT_TAG=""
+  else
+    # Update php env for the given tag or empty.
+    project_domain=$(_project_get_env_value "$project_name" PROJECT_DOMAIN)
+    output_file="$proxy_project_path/$nginx_configs_dir/$project_domain.conf"
+    project_run_global_script "create_nginx_config" "$template" "$output_file" "$allow_overwriting"
+  fi
+}
+
+_project_global_script_add_project_to_proxy() {
+  local proxy_project_name="${1:-proxy}"
+  local proxy_project_path
+  proxy_project_path=$(_project_get_project_path_by_name "$proxy_project_name")
+  local path_in_proxy="${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${PROJECT_DOMAIN]}}"
+  _project_run_script "$proxy_project_name" "$proxy_project_path" "add_volume" "$PROJECT_PATH" "$path_in_proxy"
+  project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$proxy_project_name:nginx/drupal_docker_basic" "$proxy_project_name"
 }

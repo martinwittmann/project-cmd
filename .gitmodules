@@ -1,0 +1,3 @@
+[submodule "lib/shdotenv"]
+	path = lib/shdotenv
+	url = git@github.com:schwerpunkt-digital/shdotenv.git
