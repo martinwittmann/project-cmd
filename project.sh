@@ -90,8 +90,8 @@ _project_cmd() {
           project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
           return 1
         fi
-        project_show_message "You're now in project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\"."
         cd "$project_path"
+        project_show_message "You're now in project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" $project_path."
         ;;
 
       compare_with_project)
