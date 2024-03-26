@@ -1,8 +1,11 @@
 #!/bin/bash
 declare -A PROJECT_PROJECTS
 
+# TODO This file needs quite a bit of clean up.
+
 _project_autocomplete() {
-  local project_script_path=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
+  local project_script_path
+  project_script_path=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
   PROJECT_PROJECTS_PATH="/etc/project-cmd/projects.d"
   . "$project_script_path/_functions.sh"
 
@@ -28,7 +31,11 @@ _project_autocomplete() {
       ;;
 
     cd)
-      _project_cd_autocomplete "$cur"
+      _project_autocomplete_project_name "$cur"
+      ;;
+
+    remove)
+      _project_autocomplete_project_name "$cur"
       ;;
 
     run)
@@ -41,24 +48,22 @@ _project_autocomplete() {
   esac
 }
 
-_project_cd_autocomplete() {
-  local names=$(_project_get_project_names)
+_project_autocomplete_project_name() {
+  local names
+  names=$(_project_get_project_names)
   COMPREPLY=($(compgen -W "${names[*]}" -- "$1"))
 }
 
 _project_run_autocomplete() {
-  PROJECT_PATH=`_project_get_project_path`
+  local project_path
+  project_path=$(_project_get_project_path)
 
-  if [ -z "$PROJECT_PATH" ]; then
-    echo ""
-    project_show_error "This is not a project directory."
+  if [ -z "$project_path" ]; then
     return 1
   fi
 
-  PROJECT_NAME="${PROJECT_PROJECTS[$PROJECT_PATH]}"
-
   local cur="$1"
-  local scripts_dir="$PROJECT_PATH/.project/scripts"
+  local scripts_dir="$project_path/.project/scripts"
 
   if [ ! -d $scripts_dir ]; then
     echo ""
@@ -67,7 +72,7 @@ _project_run_autocomplete() {
   fi
 
   local scripts=()
-  for script in $PROJECT_PATH/.project/scripts/*.sh; do
+  for script in "$scripts_dir"/*.sh; do
     if [ -f "$script" ]; then
       scripts+=($(basename $script|sed -e 's/\.sh$//'))
     fi
@@ -78,9 +83,12 @@ _project_run_autocomplete() {
 
 _project_tag_autocomplete() {
   local cur="$1"
-  local project_path=$(_project_get_project_path)
-  local env_file="$project_path/.env"
-  local tags=$(grep "^PROJECT_TAGS=" "$env_file" | cut -d'=' -f2)
+  local project_path
+  project_path=$(_project_get_project_path)
+  local env_file
+  env_file="$project_path/.env"
+  local tags
+  tags=$(grep "^PROJECT_TAGS=" "$env_file" | cut -d'=' -f2)
   IFS=',' read -r -a tags_list <<< "$tags"
   COMPREPLY=($(compgen -W "${tags_list[*]}" -- $cur))
 }

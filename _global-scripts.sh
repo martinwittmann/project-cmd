@@ -51,11 +51,15 @@ _project_global_script_root() {
 }
 
 _project_global_script_nginx_access() {
-  tail -f "$PROJECT_PATH/.project/logs/${PROJECT_DOMAIN}_access.log"
+  local logs_dir
+  logs_dir=$(_project_get_logs_dir "$PROJECT_NAME")
+  tail -f "$PROJECT_PATH/$logs_dir/${PROJECT_DOMAIN}_access.log"
 }
 
 _project_global_script_nginx_error() {
-  tail -f "$PROJECT_PATH/.project/logs/${PROJECT_DOMAIN}_error.log"
+  local logs_dir
+  logs_dir=$(_project_get_logs_dir "$PROJECT_NAME")
+  tail -f "$PROJECT_PATH/$logs_dir/${PROJECT_DOMAIN}_error.log"
 }
 
 _project_global_script_drush() {
@@ -144,8 +148,12 @@ done
 _project_global_script_composer() {
   if project_uses_docker; then
     docker exec -u 1000 -it -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_CONTAINER_NAME" composer "$@"
-  else
+  elif [ -n "$PROJECT_COMPOSER_BIN_ON_HOST" ]; then
     "$PROJECT_COMPOSER_BIN_ON_HOST" "$@"
+  elif type composer &> /dev/null; then
+    composer
+  else
+    project_show_error "Could not find composer bin to run on host.\nThis project is not configured to use docker."
   fi
 }
 
@@ -314,17 +322,29 @@ _project_global_script_create_nginx_config() {
     return 1
   fi
 
+  local project_path
+  project_path=$(_project_get_project_path_by_name "$project_name")
   # Project domain needs to be retrieved via _project_get_env_value to respect
   # project tags.
   local project_domain
   project_domain=$(_project_get_env_value "$project_name" PROJECT_DOMAIN)
+  local path_in_proxy
+  path_in_proxy=$(_project_get_env_value "$project_name" PROJECT_PATH_IN_PROXY_CONTAINER "" "/srv/${project_domain}")
+  path_in_container=$(_project_get_env_value "$project_name" PROJECT_PATH_IN_CONTAINER "" "/srv/app")
+  local logs_dir
+  logs_dir=$(_project_get_logs_dir "$project_name")
 
-  # TODO This feels messy, maybe find a cleaner way to do this.
+  local access_log_filename="$path_in_proxy/$logs_dir/${project_domain}_access.log"
+  local error_log_filename="$path_in_proxy/$logs_dir/${project_domain}_error.log"
+
   project_render_template "$template"\
    container_name "$PROJECT_CONTAINER_NAME"\
    container_port "$PROJECT_CONTAINER_PORT"\
    domain "$project_domain"\
-   path_in_container "${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${project_domain]}}"\
+   path_in_container "$path_in_container"\
+   path_in_proxy_container "$path_in_proxy"\
+   access_log_filename "$access_log_filename"\
+   error_log_filename "$error_log_filename"\
   > "$output_file"
 
   if [ $? -eq 0 ]; then
@@ -370,6 +390,7 @@ _project_global_script_create_nginx_config_for_project() {
       output_file="$proxy_project_path/$nginx_configs_dir/$project_domain.conf"
       PROJECT_TAG="$project_tag"
       project_run_global_script "create_nginx_config" "$template" "$output_file" "$allow_overwriting"
+      project_run_global_script "create_nginx_log_files" "$project_name" "$project_path" "$project_domain"
     done
     # Reset project tag to not mess things up.
     PROJECT_TAG=""
@@ -378,6 +399,7 @@ _project_global_script_create_nginx_config_for_project() {
     project_domain=$(_project_get_env_value "$project_name" PROJECT_DOMAIN)
     output_file="$proxy_project_path/$nginx_configs_dir/$project_domain.conf"
     project_run_global_script "create_nginx_config" "$template" "$output_file" "$allow_overwriting"
+    project_run_global_script "create_nginx_log_files" "$project_name" "$project_path" "$project_domain"
   fi
 }
 
@@ -388,4 +410,27 @@ _project_global_script_add_project_to_proxy() {
   local path_in_proxy="${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${PROJECT_DOMAIN]}}"
   _project_run_script "$proxy_project_name" "$proxy_project_path" "add_volume" "$PROJECT_PATH" "$path_in_proxy"
   project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$proxy_project_name:nginx/drupal_docker_basic" "$proxy_project_name"
+  _project_run_script "$proxy_project_name" "$proxy_project_path" "update_docker_compose" "$PROJECT_PATH" "$path_in_proxy"
+}
+
+_project_global_script_create_nginx_log_files() {
+  local project_name="$1"
+  local project_path="$2"
+  local project_domain="$3"
+  local logs_dir
+  logs_dir=$(_project_get_logs_dir "$project_name")
+
+  local access_log_filename="$project_path/$logs_dir/${project_domain}_access.log"
+  if [ ! -f "$access_log_filename" ]; then
+    touch "$access_log_filename"
+  fi
+
+  local error_log_filename="$project_path/$logs_dir/${project_domain}_error.log"
+  if [ ! -f "$error_log_filename" ]; then
+    touch "$error_log_filename"
+  fi
+}
+
+_project_global_script_end() {
+  sudo systemctl stop docker
 }

@@ -103,8 +103,10 @@ _project_load_script() {
   local script_name="$2"
   local show_errors="${3:-0}"
   local function_name="_project_${project_name}_run_$script_name"
-  local project_path=$(_project_get_project_path_by_name "$project_name")
-  local scripts_path=$(_project_get_scripts_path "$project_path")
+  local project_path
+  project_path=$(_project_get_project_path_by_name "$project_name")
+  local scripts_path
+  scripts_path=$(_project_get_scripts_path "$project_path")
   local script_filename="$scripts_path/$script_name.sh"
 
   if [ -f "$script_filename" ]; then
@@ -172,9 +174,99 @@ _project_get_project_status() {
   echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${name_padding}$PROJECT_TEXT_RESET $project_path${path_padding}$project_status"
 }
 
+project_add_project() {
+  local project_name="$1"
+  local quiet="${2:-0}"
+
+  if [ -z "$project_name" ]; then
+    project_show_error "You need to provide a project name."
+    return 1
+  fi
+
+  local project_path="$2"
+  if [ -z "$project_path" ]; then
+    project_show_error "You need to provide a project path."
+    return 1
+  fi
+  project_path=$(realpath "$project_path")
+
+  if [ ! -d "$project_path" ]; then
+    project_show_error "The project path \"$PROJECT_TEXT_YELLOW${project_path}$PROJECT_TEXT_RESET\" does not exist."
+    return 1
+  fi
+  local symlink="$PROJECT_PROJECTS_PATH/$project_name"
+  sudo ln -s "$project_path" "$symlink"
+
+  if [ "$quiet" == "0" ]; then
+    project_show_success "Added project \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\"."
+  fi
+}
+
+project_create_from_template() {
+  local project_template="$1"
+  local project_name="$2"
+  local project_path="$3"
+
+  local template_path="$__PROJECT_SCRIPT_PATH/project-templates/$project_template"
+  if [ -z "$project_template" ] || [ ! -d "$template_path" ]; then
+    project_show_error "Could not find project template \"${PROJECT_TEXT_YELLOW}${project_template}${PROJECT_TEXT_RESET}\"."
+    return 1
+  fi
+
+  if [ -z "$project_name" ]; then
+    project_show_error "You need to provide a name for this project."
+    return 1
+  fi
+
+  if project_exists "$project_name"; then
+    project_show_error "A project with the name \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\" already exists."
+    return 1
+  fi
+
+  if [ ! -d "$project_path" ] && ! mkdir -p "$project_path"; then
+    project_show_error "Could not create project directory \"${PROJECT_TEXT_YELLOW}${project_path}${PROJECT_TEXT_RESET}\"."
+    return 1
+  fi
+
+  if ! rsync -a "$template_path/" "$project_path"; then
+    project_show_error "Could not copy project template to \"${PROJECT_TEXT_YELLOW}${project_path}${PROJECT_TEXT_RESET}\"."
+    return 1
+  fi
+
+  project_path=$(realpath "$project_path")
+
+  # Set project name in .env
+  sed -i "s/^PROJECT_NAME=.*/PROJECT_NAME=$project_name/" "$project_path/.env"
+
+  if ! project_add_project "$project_name" "$project_path"; then
+    project_show_error "Could not add project \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\"."
+    return 1
+  fi
+
+  # Make project-cmd aware of the new project.
+  _project_populate_projects_array
+  local old_pwd
+  old_pwd=$(pwd)
+
+  cd "$project_path"
+  local init_script="$project_path/.project/scripts/_init_project.sh"
+  if [ -f "$init_script" ]; then
+    _project_run_script "$project_name" "$project_path" "_init_project"
+  fi
+
+  project_show_success "Created project \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\"."
+
+  cd "$old_pwd"
+}
+
+# shellcheck disable=SC2120
 project_get_docker_compose_path() {
   local project_name="${1:-${PROJECT_NAME}}"
-  echo $(_project_setup_project "$project_name" && echo "$PROJECT_PATH/docker-compose.${PROJECT_ENV}.yml")
+  local project_path
+  project_path=$(_project_get_project_path_by_name "$project_name")
+  local project_env
+  project_env=$(_project_get_env_value "$project_name" "PROJECT_ENV")
+  echo "${project_path}/docker-compose.${project_env}.yml"
 }
 
 project_uses_docker() {
@@ -193,8 +285,10 @@ _project_get_project_status_via_docker_compose() {
 
   # Output format can be "services" or "summary"
   local output_format="${2:-summary}"
-  local compose_file=$(project_get_docker_compose_path)
-  local status=$(docker compose -f "$compose_file" ps --format '{{.Name}} {{.Status}}')
+  local compose_file
+  compose_file=$(project_get_docker_compose_path)
+  local status
+  status=$(docker compose -f "$compose_file" ps --format '{{.Name}} {{.Status}}')
 
   local project_status="down"
   local all_services_up=true
@@ -256,6 +350,22 @@ _project_print_url() {
   echo -en "\nProject ${PROJECT_TEXT_YELLOW}$PROJECT_NAME${PROJECT_TEXT_RESET} available at: "
   echo -e "${PROJECT_TEXT_CYAN}\e]8;;$url\a$url\e]8;;\a${PROJECT_TEXT_RESET}"
   echo ""
+}
+
+project_exists() {
+  local project_name="$1"
+
+  if [ -z "$project_name" ]; then
+    return 1
+  fi
+
+  local project_path
+  project_path=$(_project_get_project_path_by_name "$project_name")
+  if [ $? -ne 0 ] || [ -z "$project_path" ]; then
+    return 1
+  else
+    return 0
+  fi
 }
 
 _project_assert_project_exists() {
@@ -349,7 +459,7 @@ project_build_global_docker_image() {
   fi
 
   project_show_message "Building image schwerpunkt/$dirname:$env..."
-  docker build --build-arg APP_ENV=$env -t schwerpunkt/$dirname:$env "$fullpath"
+  docker build --build-arg APP_ENV="$env" -t "schwerpunkt/$dirname:$env" "$fullpath"
   project_show_success "Done."
   echo ""
 }
@@ -464,6 +574,7 @@ _project_get_env_value() {
   local project_name="$1"
   local variable_name="$2"
   local project_tag="${3:-${PROJECT_TAG}}"
+  local default_value="$4"
 
   local project_path
   project_path=$(_project_get_project_path_by_name "$project_name")
@@ -496,7 +607,11 @@ _project_get_env_value() {
   value=${value#\"}
   value=${value%\"}
 
-  echo "$value"
+  if [ -n "$value" ]; then
+    echo "$value"
+  else
+    echo "$default_value"
+  fi
 }
 
 _project_get_env_files() {
@@ -563,4 +678,20 @@ _project_get_tags() {
   local tags
   tags=$(_project_get_env_value "$project_name" "PROJECT_TAGS")
   IFS=',' read -r -a result <<< "$tags"
+}
+
+_project_get_logs_dir() {
+  local project_name="$1"
+  local default=".project/logs"
+
+  if [ "$project_name" == "$PROJECT_NAME" ]; then
+    if [ -n "$PROJECT_LOGS_DIR" ]; then
+      echo "$PROJECT_LOGS_DIR"
+    else
+      echo "$default"
+    fi
+  else
+    # Retrieve the value from the project's env file.
+    _project_get_env_value "$project_name" PROJECT_LOGS_DIR "" "$default"
+  fi
 }

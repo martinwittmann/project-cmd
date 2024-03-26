@@ -5,8 +5,6 @@ _project_setup() {
   # Add our own .env variables.
   . $__PROJECT_SCRIPT_PATH/.env
 
-  SETUP_ERROR=0
-
   # Set up variables for easy text formatting.
   PROJECT_TEXT_RESET="\e[0m"
   PROJECT_TEXT_RED="\e[31m"
@@ -55,7 +53,7 @@ _project_setup_project() {
 
   if [ $? -ne 0 ]; then
     project_show_error "Project scripts directory \"$scripts_path\" not found."
-    SETUP_ERROR=1
+    SETUP_ERROR="1"
   fi
 
   # Set everything defined in .env as variables for this script.
@@ -63,7 +61,7 @@ _project_setup_project() {
 
   if [ ! -f "$PROJECT_ENV_FILENAME" ]; then
     project_show_error "Project env file \"$PROJECT_ENV_FILENAME\" not found."
-    SETUP_ERROR=1
+    SETUP_ERROR="1"
   fi
 
   if [ -f "$PROJECT_ENV_FILENAME" ]; then
@@ -72,7 +70,7 @@ _project_setup_project() {
 
   if [ $? -ne 0 ]; then
     project_show_error "Error sourcing env file \"$PROJECT_ENV_FILENAME\"."
-    SETUP_ERROR=1
+    SETUP_ERROR="1"
     return 1
   fi
 
@@ -85,7 +83,7 @@ _project_setup_project() {
 
   if [ $? -ne 0 ]; then
     project_show_error "Error sourcing tag env file \"$tag_env_file\"."
-    SETUP_ERROR=1
+    SETUP_ERROR="1"
     return 1
   fi
 
@@ -97,7 +95,7 @@ _project_setup_project() {
 
   if [ $? -ne 0 ]; then
     project_show_error "Error sourcing project script include \"$project_script_include\"."
-    SETUP_ERROR=1
+    SETUP_ERROR="1"
     return 1
   fi
 }
