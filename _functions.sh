@@ -494,6 +494,10 @@ project_get_template_filename() {
   local other_project_path
   other_project_path=$(_project_get_project_path_by_name "$other_project_name")
 
+  echo "render template $template_arg" >&2
+  echo "project name $other_project_name" >&2
+  echo "template file $template_file" >&2
+
   # Add the extension if it wasn't added already.
   if [[ "$template_file" != *".jinja" ]]; then
     template_file="${template_file}.jinja"
