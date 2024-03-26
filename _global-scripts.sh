@@ -404,12 +404,15 @@ _project_global_script_create_nginx_config_for_project() {
 }
 
 _project_global_script_add_project_to_proxy() {
-  local proxy_project_name="${1:-proxy}"
+  local proxy_project_name="${1:-${PROJECT_PROXY_PROJECT_NAME:-proxy}}"
   local proxy_project_path
   proxy_project_path=$(_project_get_project_path_by_name "$proxy_project_name")
   local path_in_proxy="${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${PROJECT_DOMAIN]}}"
+
   _project_run_script "$proxy_project_name" "$proxy_project_path" "add_volume" "$PROJECT_PATH" "$path_in_proxy"
-  project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$proxy_project_name:nginx/drupal_docker_basic" "$proxy_project_name"
+  project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$proxy_project_name:$PROJECT_NGINX_TEMPLATE" "$proxy_project_name"
+
+  _project_setup_project "$proxy_project_name"
   _project_run_script "$proxy_project_name" "$proxy_project_path" "update_docker_compose" "$PROJECT_PATH" "$path_in_proxy"
 }
 
