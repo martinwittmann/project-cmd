@@ -51,14 +51,12 @@ _project_autocomplete() {
       ;;
 
     run)
-      if [ -f "$completions_base/script_name.sh" ]; then
-        source "$completions_base/script_name.sh"
+      if [ -f "$completions_base/run.sh" ]; then
+        source "$completions_base/run.sh"
       fi
       ;;
 
-    tag)
-      _project_tag_autocomplete "$cur"
-      ;;
   esac
 }
+
 

@@ -25,7 +25,7 @@ _project_global_script_start() {
     # We always daemonize and remove orphans to not accumulate old containers.
     docker compose -f "$compose_file" up -d --remove-orphans
   else
-    project_show_error "I don\'t know how to start project \"${p["_text_yellow"]}${p["project_name"]}${p["_text_reset"]}\" since it is not configured to use docker and no start script is specified."
+    project_show_error "I don\'t know how to start project \"${p["_text_yellow"]}$PROJECT_NAME${p["_text_reset"]}\" since it is not configured to use docker and no start script is specified."
     return 1
   fi
 }
@@ -47,19 +47,19 @@ _project_global_script_restart() {
 }
 
 _project_global_script_root() {
-  docker exec -it --user root -w "${p["project_path"]}_IN_CONTAINER" "${p["project_name"]}" /bin/bash
+  docker exec -it --user root -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_NAME" /bin/bash
 }
 
 _project_global_script_nginx_access() {
   local logs_dir
-  logs_dir="$(_project_get_logs_dir "${p["project_name"]}")"
-  tail -f "${p["project_path"]}/$logs_dir/${PROJECT_DOMAIN}_access.log"
+  logs_dir="$(_project_get_logs_dir "$PROJECT_NAME")"
+  tail -f "$PROJECT_PATH/$logs_dir/${PROJECT_DOMAIN}_access.log"
 }
 
 _project_global_script_nginx_error() {
   local logs_dir
-  logs_dir="$(_project_get_logs_dir "${p["project_name"]}")"
-  tail -f "${p["project_path"]}/$logs_dir/${PROJECT_DOMAIN}_error.log"
+  logs_dir="$(_project_get_logs_dir "$PROJECT_NAME")"
+  tail -f "$PROJECT_PATH/$logs_dir/${PROJECT_DOMAIN}_error.log"
 }
 
 _project_global_script_drush() {
@@ -69,9 +69,9 @@ _project_global_script_drush() {
   fi
 
   if project_uses_docker; then
-    docker exec -it -u 1000 -w "${p["project_path"]}_IN_CONTAINER/web" "${p["project_name"]}" "${p["project_path"]}_IN_CONTAINER/vendor/bin/drush$location_prefix" "$@"
+    docker exec -it -u 1000 -w "$PROJECT_PATH_IN_CONTAINER/web" "$PROJECT_NAME" "$PROJECT_PATH_IN_CONTAINER/vendor/bin/drush$location_prefix" "$@"
   else
-    "${p["project_path"]}/vendor/bin/drush$location_prefix" "$@"
+    "$PROJECT_PATH/vendor/bin/drush$location_prefix" "$@"
   fi
 }
 
@@ -93,7 +93,7 @@ _project_global_script_mysql_root() {
 
 _project_global_script_mysql_dump() {
   local backup_path
-  backup_path="$(realpath "${p["project_path"]}/.project/dumps")"
+  backup_path="$(realpath "$PROJECT_PATH/.project/dumps")"
   if [ -n "${p["project_tag"]}" ]; then
     backup_path="$backup_path/${p["project_tag"]}"
     mkdir -p "$backup_path"
@@ -101,9 +101,9 @@ _project_global_script_mysql_dump() {
 
   local date
   date="$(date +%F--%H-%M)"
-  local dump_file="${backup_path}/${date}--${p["project_name"]}_${PROJECT_ENV}.sql"
+  local dump_file="${backup_path}/${date}--${PROJECT_NAME}_${PROJECT_ENV}.sql"
   # Strip the project path from the beginning of $dump_file.
-  local short_name="${dump_file#${p["project_path"]}}"
+  local short_name="${dump_file#$PROJECT_PATH}"
 
   echo -e "Creating database dump at \"${p["_text_yellow"]}${short_name}${p["_text_reset"]}\"..."
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
@@ -135,7 +135,7 @@ _project_global_script_import_mysql_dump() {
 
 _project_global_script_list_mysql_dumps() {
   local dumps_path
-  dumps_path="$(realpath "${p["project_path"]}/.project/dumps")"
+  dumps_path="$(realpath "$PROJECT_PATH/.project/dumps")"
   ls -lh "$dumps_path" | tail -n +2 | while read -r line; do
     # Extract file name
     file=$(echo "$line" | awk '{print $9 " (" $5 ")"}')
@@ -147,7 +147,7 @@ done
 
 _project_global_script_composer() {
   if project_uses_docker; then
-    docker exec -u 1000 -it -w "${p["project_path"]}_IN_CONTAINER" "$PROJECT_CONTAINER_NAME" composer "$@"
+    docker exec -u 1000 -it -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_CONTAINER_NAME" composer "$@"
   elif [ -n "$PROJECT_COMPOSER_BIN_ON_HOST" ]; then
     "$PROJECT_COMPOSER_BIN_ON_HOST" "$@"
   elif type composer &> /dev/null; then
@@ -162,16 +162,16 @@ _project_global_script_build_theme() {
     -it \
     --rm \
     --user "$PROJECT_CONTAINER_UID" \
-    --workdir "${p["project_path"]}_IN_CONTAINER/$PROJECT_NPM_ROOT" \
+    --workdir "$PROJECT_PATH_IN_CONTAINER/$PROJECT_NPM_ROOT" \
     --name "${PROJECT_CONTAINER_NAME}_npm" \
-    --volume "${p["project_path"]}:${p["project_path"]}_IN_CONTAINER" \
+    --volume "$PROJECT_PATH:$PROJECT_PATH_IN_CONTAINER" \
     node:alpine \
     npm run build
 }
 
 _project_global_script_enter() {
   if project_uses_docker; then
-    docker exec -it -u 1000 -w "${p["project_path"]}_IN_CONTAINER" "${p["project_name"]}" /bin/bash
+    docker exec -it -u 1000 -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_NAME" /bin/bash
   else
     project_show_error "This environment is configured not to use docker!"
     return 1
@@ -189,7 +189,7 @@ _project_global_script_npm() {
     --user "$uid" \
     --workdir "$workdir" \
     --name "${PROJECT_CONTAINER_NAME}_npm" \
-    --volume "${p["project_path"]}:${p["project_path"]}_IN_CONTAINER" \
+    --volume "$PROJECT_PATH:$PROJECT_PATH_IN_CONTAINER" \
     node:alpine \
     npm "$@"
 }
@@ -199,10 +199,10 @@ _project_global_script_vite() {
     -it \
     --rm \
     --user "$PROJECT_CONTAINER_UID" \
-    --workdir "${p["project_path"]}_IN_CONTAINER/$PROJECT_NPM_ROOT" \
+    --workdir "$PROJECT_PATH_IN_CONTAINER/$PROJECT_NPM_ROOT" \
     --name "${PROJECT_CONTAINER_NAME}_npm" \
     -p "$PROJECT_VITE_PORT_ON_HOST:$PROJECT_VITE_PORT" \
-    --volume "${p["project_path"]}:${p["project_path"]}_IN_CONTAINER" \
+    --volume "$PROJECT_PATH:$PROJECT_PATH_IN_CONTAINER" \
     node:alpine \
     npm run start
 }
@@ -244,7 +244,7 @@ _project_global_script_compare_with_project() {
 
   filename="$(realpath "$relative_filename")"
 
-  # Normalize relative_name to be relative to ${p["project_path"]}.
+  # Normalize relative_name to be relative to $PROJECT_PATH.
   local project_path
   project_path="$(_project_get_project_path)"
   relative_filename="${filename#$project_path}"
@@ -409,11 +409,11 @@ _project_global_script_add_project_to_proxy() {
   proxy_project_path="$(_project_get_project_path_by_name "$proxy_project_name")"
   local path_in_proxy="${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${PROJECT_DOMAIN}}"
 
-  _project_run_script "$proxy_project_name" "$proxy_project_path" "add_volume" "${p["project_path"]}" "$path_in_proxy"
-  project_run_global_script "create_nginx_config_for_project" "${p["project_name"]}" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name"
+  _project_run_script "$proxy_project_name" "$proxy_project_path" "add_volume" "$PROJECT_PATH" "$path_in_proxy"
+  project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name"
 
   _project_setup_project "$proxy_project_name"
-  _project_run_script "$proxy_project_name" "$proxy_project_path" "update_docker_compose" "${p["project_path"]}" "$path_in_proxy"
+  _project_run_script "$proxy_project_name" "$proxy_project_path" "update_docker_compose" "$PROJECT_PATH" "$path_in_proxy"
 }
 
 _project_global_script_create_nginx_log_files() {

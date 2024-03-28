@@ -148,7 +148,7 @@ _project_run_script() {
     # We need to source the script file to make all our variables and commands /
     # functions available to the script.
 
-    if [ "$project_name" == "${p["project_name"]}" ]; then
+    if [ "$project_name" == "$PROJECT_NAME" ]; then
       source "$script_filename"
     else
       echo "$(_project_setup_project "$project_name" && source "$script_filename")"
@@ -271,7 +271,7 @@ project_create_from_template() {
 
 # shellcheck disable=SC2120
 project_get_docker_compose_path() {
-  local project_name="${1:-${p["project_name"]}}"
+  local project_name="${1:-$PROJECT_NAME}"
   local project_path
   project_path="$(_project_get_project_path_by_name "$project_name")"
   local project_env
@@ -291,7 +291,7 @@ project_uses_docker() {
 # Only call this in a sub-shell since this will overwrite all project variables
 # by calling project_setup_project
 _project_get_project_status_via_docker_compose() {
-  local project_name="${1:-${p["project_name"]}}"
+  local project_name="${1:-$PROJECT_NAME}"
 
   # Output format can be "services" or "summary"
   local output_format="${2:-summary}"
@@ -359,7 +359,7 @@ _project_status_output() {
 
 _project_print_url() {
   local url="$1"
-  echo -en "\nProject ${p["_text_yellow"]}${p["project_name"]}${p["_text_reset"]} available at: "
+  echo -en "\nProject ${p["_text_yellow"]}$PROJECT_NAME${p["_text_reset"]} available at: "
   echo -e "${p["_text_cyan"]}\e]8;;$url\a$url\e]8;;\a${p["_text_reset"]}"
   echo ""
 }
@@ -573,7 +573,7 @@ project_render_template() {
 }
 
 _project_update_php_env() {
-  local project_name="${1:-${p["project_name"]}}"
+  local project_name="${1:-$PROJECT_NAME}"
 
   declare -a project_tags=()
   _project_get_tags "$project_name" project_tags
@@ -704,7 +704,7 @@ _project_get_logs_dir() {
   local project_name="$1"
   local default=".project/logs"
 
-  if [ "$project_name" == "${p["project_name"]}" ]; then
+  if [ "$project_name" == "$PROJECT_NAME" ]; then
     if [ -n "$PROJECT_LOGS_DIR" ]; then
       echo "$PROJECT_LOGS_DIR"
     else

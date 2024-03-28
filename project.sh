@@ -52,9 +52,9 @@ _project_cmd() {
   # This sets up project-cmd, but not a project.
   _project_setup "$project_name" "$project_tag"
 
-  if [ -n "${p["project_path"]}" ]; then
-    project_name="${p["project_name"]}"
-    project_path="${p["project_path"]}"
+  if [ -n "$PROJECT_PATH" ]; then
+    project_name="$PROJECT_NAME"
+    project_path="$PROJECT_PATH"
   fi
 
   if [ -n "${p["setup_error"]}" ]; then
