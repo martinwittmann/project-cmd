@@ -1,11 +1,9 @@
 #!/bin/bash
 
-_project_setup() {
-  # Add our own .env variables.
-  source "${p["_script_path"]}/.env"
-  source "${p["_script_path"]}/_functions.sh"
+declare -A p_projects
 
-  # Variables for easy text formatting.
+_project_setup() {
+  # Static variables for easy text formatting.
   p["_text_reset"]="\e[0m"
   p["_text_red"]="\e[31m"
   p["_text_green"]="\e[32m"
@@ -18,11 +16,16 @@ _project_setup() {
   p["_status_warning"]="${p["_text_yellow"]}${p["_text_bold"]}[WARNING]${p["_text_reset"]}"
   p["_status_error"]="${p["_text_red"]}${p["_text_bold"]}[ERROR]${p["_text_reset"]}"
 
-  # Set up path variables.
-  p["projects_path"]="/etc/project-cmd/projects.d"
 
   p["project_name"]="$1"
   p["project_tag"]="$2"
+
+  # Set up path variables.
+  p["projects_path"]="/etc/project-cmd/projects.d"
+
+  # Add our own .env variables.
+  source "${p["_script_path"]}/.env"
+  source "${p["_script_path"]}/_functions.sh"
 
   # We need to declare it as global.
   _project_populate_projects_array
@@ -49,7 +52,8 @@ _project_setup_project() {
   fi
 
   _project_assert_project_exists "${p["project_name"]}" "${p["project_path"]}"
-  local scripts_path="$(_project_get_scripts_path "${p["project_path"]}")"
+  local scripts_path
+  scripts_path="$(_project_get_scripts_path "${p["project_path"]}")"
 
   if [ $? -ne 0 ]; then
     project_show_error "Project scripts directory \"$scripts_path\" not found."

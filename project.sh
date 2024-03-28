@@ -1,22 +1,18 @@
 #!/bin/bash
 
-declare -A PROJECT_PROJECTS
+# Bootstrapping.
 declare -A p
 p["_script_path"]="$(realpath "${BASH_SOURCE[0]}" | xargs dirname)"
-declare -A p_projects
+source "${p["_script_path"]}/_setup.sh"
 
 _project_cmd() {
-  SETUP_ERROR=""
   # The path of project.sh.
-  source "${p["_script_path"]}/_setup.sh"
 
   local project_name=""
   local project_path=""
   local project_tag=""
   PROJECT_TAG=""
   local command=""
-
-
 
   # Parse options
 
@@ -61,7 +57,7 @@ _project_cmd() {
     project_path="${p["project_path"]}"
   fi
 
-  if [ -n "$SETUP_ERROR" ]; then
+  if [ -n "${p["setup_error"]}" ]; then
     project_show_error "Project-cmd setup error."
     return 1
   fi

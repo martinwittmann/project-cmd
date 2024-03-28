@@ -17,6 +17,16 @@ _project_populate_projects_array() {
   done
 }
 
+_project_get_available_commands() {
+  local -n result=$1
+  local command
+  for command in "${p["_script_path"]}"/commands/*.sh; do
+    if [ -f "$command" ]; then
+      result+=("$(basename "$command"|sed -e 's/\.sh$//')")
+    fi
+  done
+}
+
 _project_get_project_path_by_name() {
   project_name="$1"
   local item_name
