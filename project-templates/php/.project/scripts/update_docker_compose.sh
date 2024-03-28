@@ -1,7 +1,7 @@
 #!/bin/bash
 
 _proxy_update_docker_compose() {
-  project_render_template "$PROJECT_NAME:docker-compose/$PROJECT_ENV"\
+  project_render_template "${p["project_name"]}:docker-compose/$PROJECT_ENV"\
    environment "\${PROJECT_ENV}"\
    container_name "\${PROJECT_CONTAINER_NAME}"\
    container_uid "\${PROJECT_CONTAINER_UID}"\
@@ -12,7 +12,7 @@ _proxy_update_docker_compose() {
    db_password "\${PROJECT_DB_PASSWORD}"\
    project_path_in_container "\${PROJECT_PATH_IN_CONTAINER}"\
    network_name "$PROJECT_DOCKER_NETWORK_NAME"\
-  > "$PROJECT_PATH/docker-compose.$PROJECT_ENV.yml"
+  > "${p["project_path"]}/docker-compose.$PROJECT_ENV.yml"
 }
 
 _proxy_update_docker_compose

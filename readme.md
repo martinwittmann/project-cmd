@@ -26,7 +26,7 @@ Create a .env file:
 
   # Recommended if you use docker:
   PROJECT_USE_DOCKER=1
-  PROJECT_CONTAINER_NAME=${PROJECT_NAME}
+  PROJECT_CONTAINER_NAME=${p["project_name"]}
   # Required for some global scripts and quite handy in docker compose files.
   PROJECT_PATH_IN_CONTAINER=/app
   ```
@@ -74,14 +74,14 @@ Create .project/scripts/npm.sh:
   # Example: Run npm in a node container
     docker run \
     -it \
-    --workdir "$PROJECT_PATH_IN_CONTAINER/path/to/npm" \
+    --workdir "${p["project_path"]}_IN_CONTAINER/path/to/npm" \
     --name "${PROJECT_CONTAINER_NAME}_npm" \
-    --volume "$PROJECT_PATH:$PROJECT_PATH_IN_CONTAINER" \
+    --volume "${p["project_path"]}:${p["project_path"]}_IN_CONTAINER" \
     node:alpine \
     npm "$@"
 
-    # $PROJECT_PATH is automatically being set.
-    # $PROJECT_PATH_IN_CONTAINER is required for several global scripts but can
+    # ${p["project_path"]} is automatically being set.
+    # ${p["project_path"]}_IN_CONTAINER is required for several global scripts but can
     # be omitted if you just use custom scripts.
   ```
 Script names can contain alphanumeric and underscore characters and will be auto completed if a .sh file exists in .projet/scripts.

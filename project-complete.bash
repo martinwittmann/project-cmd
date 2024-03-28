@@ -6,16 +6,21 @@ declare -A PROJECT_PROJECTS
 _project_autocomplete() {
   local project_script_path
   project_script_path=$(realpath "${BASH_SOURCE[0]}" | xargs dirname)
-  PROJECT_PROJECTS_PATH="/etc/project-cmd/projects.d"
-  . "$project_script_path/_functions.sh"
+  #PROJECT_PROJECTS_PATH="/etc/project-cmd/projects.d"
+  #. "$project_script_path/_functions.sh"
 
-  _project_populate_projects_array
+  #_project_populate_projects_array
+
+  . "$project_script_path/_setup.sh"
+
+  # This sets up project-cmd, but not a project.
+  _project_setup "$project_name" "$project_tag"
 
   local cur=${COMP_WORDS[COMP_CWORD]}
   local prev=${COMP_WORDS[COMP_CWORD-1]}
   local prevprev=${COMP_WORDS[COMP_CWORD-2]}
 
-  local commands=("add" "build_global_docker_images" "cd" "compare_with_project" "end" "list" "remove" "restart" "run" "start" "stop" "tag")
+  local commands=("add" "build_docker_images" "cd" "compare_with_project" "end" "list" "remove" "restart" "run" "start" "stop" "tag")
 
   case $prevprev in 
     tag)

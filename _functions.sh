@@ -3,7 +3,7 @@
 _project_populate_projects_array() {
   # Note that we can't use double quotes in the for loop as this breaks it for
   # some reason.
-  for symlink in $PROJECT_PROJECTS_PATH/*; do
+  for symlink in ${p["projects_path"]}/*; do
     if [ -L "$symlink" ]; then
       local project_path
       project_path=$(readlink -f "$symlink")
@@ -12,7 +12,7 @@ _project_populate_projects_array() {
         echo "Could not read $symlink"
         return 1
       fi
-      PROJECT_PROJECTS["$project_path"]=$(basename "$symlink")
+      p_projects["$project_path"]=$(basename "$symlink")
     fi
   done
 }
@@ -21,8 +21,8 @@ _project_get_project_path_by_name() {
   project_name="$1"
   local item_name
 
-  for item_path in "${!PROJECT_PROJECTS[@]}"; do
-    local item_name="${PROJECT_PROJECTS[$item_path]}"
+  for item_path in "${!p_projects[@]}"; do
+    local item_name="${p_projects["$item_path"]}"
     if [ "$project_name" == "$item_name" ]; then
       echo "$item_path"
       return 0
@@ -40,9 +40,9 @@ _project_get_project_path() {
     current_path=$(pwd)
   fi
 
-  if [[ -v PROJECT_PROJECTS["$current_path"] ]]; then
-    echo $current_path
-  elif [ "$current_path" == "/" ] && [ $show_errors -eq 1 ]; then
+  if [[ -v p_projects["$current_path"] ]]; then
+    echo "$current_path"
+  elif [ "$current_path" == "/" ] && [ "$show_errors" == "1" ]; then
     return 1
   else
     current_path=$(realpath "$current_path/..")
@@ -58,25 +58,25 @@ _project_get_project_name() {
     project_path=$(_project_get_project_path)
   fi
 
-  if [[ -v PROJECT_PROJECTS["$project_path"] ]]; then
-    echo "${PROJECT_PROJECTS["$project_path"]}"
-  elif [ $show_errors -eq 1 ]; then
-    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
+  if [[ -v p_projects["$project_path"] ]]; then
+    echo "${p_projects["$project_path"]}"
+  elif [ "$show_errors" == "1" ]; then
+    project_show_error "Project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\" not found."
     return 1
   fi
 }
 
 # All messages are written to stderr to not pollute stdout.
 project_show_error() {
-  echo -e "$PROJECT_STATUS_ERROR $1" >&2
+  echo -e "${p["_status_error"]} $1" >&2
 }
 
 project_show_warning() {
-  echo -e "$PROJECT_STATUS_WARNING $1" >&2
+  echo -e "${p["_status_warning"]} $1" >&2
 }
 
 project_show_success() {
-  echo -e "$PROJECT_STATUS_SUCCESS $1" >&2
+  echo -e "${p["_status_success"]} $1" >&2
 }
 
 project_show_message() {
@@ -86,7 +86,7 @@ project_show_message() {
 _project_get_scripts_path() {
   local project_path="$1"
   if [ -z "$project_path" ]; then
-    project_path=$(_project_get_project_path)
+    project_path="$(_project_get_project_path)"
   fi
 
   echo "$project_path/.project/scripts"
@@ -104,18 +104,18 @@ _project_load_script() {
   local show_errors="${3:-0}"
   local function_name="_project_${project_name}_run_$script_name"
   local project_path
-  project_path=$(_project_get_project_path_by_name "$project_name")
+  project_path="$(_project_get_project_path_by_name "$project_name")"
   local scripts_path
-  scripts_path=$(_project_get_scripts_path "$project_path")
+  scripts_path="$(_project_get_scripts_path "$project_path")"
   local script_filename="$scripts_path/$script_name.sh"
 
   if [ -f "$script_filename" ]; then
-    . "$script_filename"
+    source "$script_filename"
   fi
 
-  if [ "$(type -t $function_name)" != "function" ]; then
-    if [ $show_errors -eq 1 ]; then
-      project_show_warning "The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
+  if [ "$(type -t "$function_name")" != "function" ]; then
+    if [ "$show_errors" == "1" ]; then
+      project_show_warning "The script \"${p["_text_yellow"]}${script_name}${p["_text_reset"]}\" does not exist in project ${p["_text_yellow"]}${project_name}${p["_text_reset"]}."
     fi
     return 1
   fi
@@ -127,30 +127,30 @@ _project_run_script() {
   local script_name="$3"
   shift 3
   local script_filename
-  script_filename=$(_project_get_script_path "$project_path" "$script_name")
+  script_filename="$(_project_get_script_path "$project_path" "$script_name")"
 
   # We need to source the global scripts file to make sure these functions are
   # available for project script files.
-  local global_scripts="$__PROJECT_SCRIPT_PATH/_global-scripts.sh"
-  source $global_scripts
+  local global_scripts="${p["_script_path"]}/_global-scripts.sh"
+  source "$global_scripts"
 
   if [ -f "$script_filename" ]; then
     # We need to source the script file to make all our variables and commands /
     # functions available to the script.
 
-    if [ "$project_name" == "$PROJECT_NAME" ]; then
+    if [ "$project_name" == "${p["project_name"]}" ]; then
       source "$script_filename"
     else
       echo "$(_project_setup_project "$project_name" && source "$script_filename")"
     fi
   else
-    project_show_error "$script_filename The script \"${PROJECT_TEXT_YELLOW}${script_name}$PROJECT_TEXT_RESET\" does not exist in project ${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET."
+    project_show_error "$script_filename The script \"${p["_text_yellow"]}${script_name}${p["_text_reset"]}\" does not exist in project ${p["_text_yellow"]}${project_name}${p["_text_reset"]}."
   fi
 }
 
 _project_get_project_names() {
-  for item_path in "${!PROJECT_PROJECTS[@]}"; do
-    echo "${PROJECT_PROJECTS[$item_path]}"
+  for item_path in "${!p_projects[@]}"; do
+    echo "${p_projects["$item_path"]}"
   done
 }
 
@@ -158,20 +158,20 @@ _project_get_project_status() {
   local project_name="$1"
   local project_path="$2"
   local name_padding=$((10 - ${#project_name}))
-  local script_filename=$(_project_get_script_path "$project_path" "status")
+  local script_filename="$(_project_get_script_path "$project_path" "status")"
   local project_status
 
   if [ -f "$script_filename" ]; then
-    project_status=$(_project_run_script "$project_name" "$project_path" "status" "short")
+    project_status="$(_project_run_script "$project_name" "$project_path" "status" "short")"
   else
-    project_status="${PROJECT_TEXT_GRAY}unknown$PROJECT_TEXT_RESET"
+    project_status="${p["_text_gray"]}unknown${p["_text_reset"]}"
   fi
 
-  name_padding=$(printf "%${name_padding}s")
-  local path_padding=$((60 - ${#project_path}))
-  path_padding=$(printf "%${path_padding}s")
+  name_padding="$(printf "%${name_padding}s")"
+  local path_padding="$((60 - ${#project_path}))"
+  path_padding="$(printf "%${path_padding}s")"
 
-  echo -e " ${PROJECT_TEXT_YELLOW}${project_name}${name_padding}$PROJECT_TEXT_RESET $project_path${path_padding}$project_status"
+  echo -e " ${p["_text_yellow"]}${project_name}${name_padding}${p["_text_reset"]} $project_path${path_padding}$project_status"
 }
 
 project_add_project() {
@@ -188,17 +188,17 @@ project_add_project() {
     project_show_error "You need to provide a project path."
     return 1
   fi
-  project_path=$(realpath "$project_path")
+  project_path="$(realpath "$project_path")"
 
   if [ ! -d "$project_path" ]; then
-    project_show_error "The project path \"$PROJECT_TEXT_YELLOW${project_path}$PROJECT_TEXT_RESET\" does not exist."
+    project_show_error "The project path \"${p["_text_yellow"]}${project_path}${p["_text_reset"]}\" does not exist."
     return 1
   fi
-  local symlink="$PROJECT_PROJECTS_PATH/$project_name"
+  local symlink="${p["projects_path"]}/$project_name"
   sudo ln -s "$project_path" "$symlink"
 
   if [ "$quiet" == "0" ]; then
-    project_show_success "Added project \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\"."
+    project_show_success "Added project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
   fi
 }
 
@@ -207,9 +207,9 @@ project_create_from_template() {
   local project_name="$2"
   local project_path="$3"
 
-  local template_path="$__PROJECT_SCRIPT_PATH/project-templates/$project_template"
+  local template_path="${p["_script_path"]}/project-templates/$project_template"
   if [ -z "$project_template" ] || [ ! -d "$template_path" ]; then
-    project_show_error "Could not find project template \"${PROJECT_TEXT_YELLOW}${project_template}${PROJECT_TEXT_RESET}\"."
+    project_show_error "Could not find project template \"${p["_text_yellow"]}${project_template}${p["_text_reset"]}\"."
     return 1
   fi
 
@@ -219,34 +219,34 @@ project_create_from_template() {
   fi
 
   if project_exists "$project_name"; then
-    project_show_error "A project with the name \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\" already exists."
+    project_show_error "A project with the name \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\" already exists."
     return 1
   fi
 
   if [ ! -d "$project_path" ] && ! mkdir -p "$project_path"; then
-    project_show_error "Could not create project directory \"${PROJECT_TEXT_YELLOW}${project_path}${PROJECT_TEXT_RESET}\"."
+    project_show_error "Could not create project directory \"${p["_text_yellow"]}${project_path}${p["_text_reset"]}\"."
     return 1
   fi
 
   if ! rsync -a "$template_path/" "$project_path"; then
-    project_show_error "Could not copy project template to \"${PROJECT_TEXT_YELLOW}${project_path}${PROJECT_TEXT_RESET}\"."
+    project_show_error "Could not copy project template to \"${p["_text_yellow"]}${project_path}${p["_text_reset"]}\"."
     return 1
   fi
 
-  project_path=$(realpath "$project_path")
+  project_path="$(realpath "$project_path")"
 
   # Set project name in .env
   sed -i "s/^PROJECT_NAME=.*/PROJECT_NAME=$project_name/" "$project_path/.env"
 
   if ! project_add_project "$project_name" "$project_path"; then
-    project_show_error "Could not add project \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\"."
+    project_show_error "Could not add project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
     return 1
   fi
 
   # Make project-cmd aware of the new project.
   _project_populate_projects_array
   local old_pwd
-  old_pwd=$(pwd)
+  old_pwd="$(pwd)"
 
   cd "$project_path"
   local init_script="$project_path/.project/scripts/_init_project.sh"
@@ -254,18 +254,18 @@ project_create_from_template() {
     _project_run_script "$project_name" "$project_path" "_init_project"
   fi
 
-  project_show_success "Created project \"${PROJECT_TEXT_YELLOW}${project_name}${PROJECT_TEXT_RESET}\"."
+  project_show_success "Created project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
 
   cd "$old_pwd"
 }
 
 # shellcheck disable=SC2120
 project_get_docker_compose_path() {
-  local project_name="${1:-${PROJECT_NAME}}"
+  local project_name="${1:-${p["project_name"]}}"
   local project_path
-  project_path=$(_project_get_project_path_by_name "$project_name")
+  project_path="$(_project_get_project_path_by_name "$project_name")"
   local project_env
-  project_env=$(_project_get_env_value "$project_name" "PROJECT_ENV")
+  project_env="$(_project_get_env_value "$project_name" "PROJECT_ENV")"
   echo "${project_path}/docker-compose.${project_env}.yml"
 }
 
@@ -281,14 +281,14 @@ project_uses_docker() {
 # Only call this in a sub-shell since this will overwrite all project variables
 # by calling project_setup_project
 _project_get_project_status_via_docker_compose() {
-  local project_name="${1:-${PROJECT_NAME}}"
+  local project_name="${1:-${p["project_name"]}}"
 
   # Output format can be "services" or "summary"
   local output_format="${2:-summary}"
   local compose_file
-  compose_file=$(project_get_docker_compose_path)
+  compose_file="$(project_get_docker_compose_path)"
   local status
-  status=$(docker compose -f "$compose_file" ps --format '{{.Name}} {{.Status}}')
+  status="$(docker compose -f "$compose_file" ps --format '{{.Name}} {{.Status}}')"
 
   local project_status="down"
   local all_services_up=true
@@ -302,8 +302,10 @@ _project_get_project_status_via_docker_compose() {
   fi
 
   while IFS= read -r line; do
-    local container_name=$(echo "$line" | awk '{print $1}')
-    local container_status=$(echo "$line" | tr '[:upper:]' '[:lower:]' | awk '{print $2}')
+    local container_name
+    container_name="$(echo "$line" | awk '{print $1}')"
+    local container_status
+    container_status="$(echo "$line" | tr '[:upper:]' '[:lower:]' | awk '{print $2}')"
 
 
     if [ "$container_status" == "up" ]; then
@@ -316,9 +318,9 @@ _project_get_project_status_via_docker_compose() {
 
     if [[ "$output_format" == "services" ]]; then
       local spaces=$((10 - ${#container_name}))
-      spaces=$(printf "%${spaces}s")
+      spaces="$(printf "%${spaces}s")"
       echo -n " $container_name:$spaces"
-      _project_status_output $container_status
+      _project_status_output "$container_status"
     fi
   done <<< "$status"
 
@@ -337,18 +339,18 @@ _project_get_project_status_via_docker_compose() {
 _project_status_output() {
   local status="$1"
   if [ "$status" == "up" ]; then
-    echo -e "${PROJECT_TEXT_GREEN}${status}$PROJECT_TEXT_RESET"
+    echo -e "${p["_text_green"]}${status}${p["_text_reset"]}"
   elif [ "$status" == "partial" ]; then
-    echo -e "${PROJECT_TEXT_GREEN}${status}$PROJECT_TEXT_RESET"
+    echo -e "${p["_text_green"]}${status}${p["_text_reset"]}"
   else
-    echo -e "${PROJECT_TEXT_RED}${status}$PROJECT_TEXT_RESET"
+    echo -e "${p["_text_red"]}${status}${p["_text_reset"]}"
   fi
 }
 
 _project_print_url() {
   local url="$1"
-  echo -en "\nProject ${PROJECT_TEXT_YELLOW}$PROJECT_NAME${PROJECT_TEXT_RESET} available at: "
-  echo -e "${PROJECT_TEXT_CYAN}\e]8;;$url\a$url\e]8;;\a${PROJECT_TEXT_RESET}"
+  echo -en "\nProject ${p["_text_yellow"]}${p["project_name"]}${p["_text_reset"]} available at: "
+  echo -e "${p["_text_cyan"]}\e]8;;$url\a$url\e]8;;\a${p["_text_reset"]}"
   echo ""
 }
 
@@ -360,7 +362,8 @@ project_exists() {
   fi
 
   local project_path
-  project_path=$(_project_get_project_path_by_name "$project_name")
+  project_path="$(_project_get_project_path_by_name "$project_name")"
+
   if [ $? -ne 0 ] || [ -z "$project_path" ]; then
     return 1
   else
@@ -372,15 +375,15 @@ _project_assert_project_exists() {
   local project_name="$1"
   local project_path="$2"
   if [ -z $project_path ]; then
-    project_path=$(_project_get_project_path_by_name "$project_name")
+    project_path="$(_project_get_project_path_by_name "$project_name")"
 
     if [ $? -ne 0 ]; then
       return 1
     fi
   fi
 
-  if [ -z $project_name ] || [ -z $project_path ] || [ ! -d $project_path ]; then
-    project_show_error "Project \"${PROJECT_TEXT_YELLOW}${project_name}$PROJECT_TEXT_RESET\" not found."
+  if [ -z "$project_name" ] || [ -z "$project_path" ] || [ ! -d "$project_path" ]; then
+    project_show_error "Project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\" not found."
     return 1
   fi
 
@@ -415,17 +418,18 @@ project_is_production() {
   fi
 }
 
-project_build_global_docker_images() {
+project_build_docker_images() {
   local dirnames="$1"
   if [ -z "$dirnames" ]; then
     project_show_error "You need to specify directory names, separated by ';' for which docker images will be built."
     return 1
   fi
   local env="${2:-prod}"
-  local basepath="${3:-${__PROJECT_SCRIPT_PATH}/docker/${dirname}}"
+  local basepath
+  basepath="${3:-${p["_script_path"]}/docker/${dirname}}"
 
   if [ ! -d "$basepath" ]; then
-    project_show_error "Directory \"${PROJECT_TEXT_YELLOW}${basepath}$PROJECT_TEXT_RESET\" not found."
+    project_show_error "Directory \"${p["_text_yellow"]}${basepath}${p["_text_reset"]}\" not found."
     return 1
   fi
 
@@ -442,24 +446,31 @@ project_build_global_docker_images() {
 project_build_global_docker_image() {
   project_start_docker 1
   local dirname="$1"
-  local env="${2:-prod}"
-  local basepath="${3:-${__PROJECT_SCRIPT_PATH}/docker/${dirname}}"
+  local basepath="${2:-${p["_script_path"]}/docker/${dirname}}"
+  local env="${3:-prod}"
+  local image_name_prefix="${4}"
+
   local fullpath="$basepath/$dirname"
 
   if [ ! -d "$basepath" ]; then
-    project_show_error "Directory \"${PROJECT_TEXT_YELLOW}${basepath}$PROJECT_TEXT_RESET\" not found. Skipping."
+    project_show_error "Directory \"${p["_text_yellow"]}${basepath}${p["_text_reset"]}\" not found. Skipping."
     echo ""
     exit 1
   fi
 
   if [ ! -d "$fullpath" ]; then
-    project_show_error "Directory \"${PROJECT_TEXT_YELLOW}${fullpath}$PROJECT_TEXT_RESET\" not found. Skipping."
+    project_show_error "Directory \"${p["_text_yellow"]}${fullpath}${p["_text_reset"]}\" not found. Skipping."
     echo ""
     exit 1
   fi
 
-  project_show_message "Building image schwerpunkt/$dirname:$env..."
-  docker build --build-arg APP_ENV="$env" -t "schwerpunkt/$dirname:$env" "$fullpath"
+  local image_name="${image_name_prefix}$dirname"
+  if [ -n "$env" ]; then
+    image_name="${image_name}:$env"
+  fi
+
+  project_show_message "Building image \"${p["_text_yellow"]}${image_name}${p["_text_reset"]}\"..."
+  docker build --build-arg APP_ENV="$env" -t "$image_name" "$fullpath"
   project_show_success "Done."
   echo ""
 }
@@ -486,20 +497,20 @@ project_get_template_filename() {
   template_file="${template_arg#*:}"
 
   if [ -z "$other_project_name" ] || [ -z "$template_file" ]; then
-    project_show_error "Invalid template argument \"${PROJECT_TEXT_YELLOW}${template_arg}${PROJECT_TEXT_RESET}\".\nPlease use the format \"${PROJECT_TEXT_YELLOW}${template_argument_format}${PROJECT_TEXT_RESET}\" and make sure the project and the corresponding path ([project_name]/.project/templates/[template]/path) exists."
+    project_show_error "Invalid template argument \"${p["_text_yellow"]}${template_arg}${p["_text_reset"]}\".\nPlease use the format \"${p["_text_yellow"]}${template_argument_format}${p["_text_reset"]}\" and make sure the project and the corresponding path ([project_name]/.project/templates/[template]/path) exists."
     return 1
   fi
 
   # Resolve the template file
   local other_project_path
-  other_project_path=$(_project_get_project_path_by_name "$other_project_name")
+  other_project_path="$(_project_get_project_path_by_name "$other_project_name")"
 
   # Add the extension if it wasn't added already.
   if [[ "$template_file" != *".jinja" ]]; then
     template_file="${template_file}.jinja"
   fi
   local templates_path
-  templates_path=$(realpath "$other_project_path/.project/templates")
+  templates_path="$(realpath "$other_project_path/.project/templates")"
 
   echo "$templates_path/$template_file"
 }
@@ -511,15 +522,15 @@ project_render_template() {
   local template_argument_format="[project_name]:[path]/[to]/[template]"
 
   if [ -z "$template_arg" ]; then
-    project_show_error -e "$PROJECT_STATUS_ERROR You need to specify a template in the form \"${PROJECT_TEXT_YELLOW}${template_argument_format}${PROJECT_TEXT_RESET}\" as first argument."
+    project_show_error -e "${p["_status_error"]} You need to specify a template in the form \"${p["_text_yellow"]}${template_argument_format}${p["_text_reset"]}\" as first argument."
     return 1;
   fi
 
   local template_file
-  template_file=$(project_get_template_filename "$template_arg")
+  template_file="$(project_get_template_filename "$template_arg")"
 
   if [ ! -f "$template_file" ]; then
-    project_show_error "Cannot find template \"${PROJECT_TEXT_YELLOW}${template_file}${PROJECT_TEXT_RESET}\"."
+    project_show_error "Cannot find template \"${p["_text_yellow"]}${template_file}${p["_text_reset"]}\"."
     return 1
   fi
 
@@ -538,7 +549,7 @@ project_render_template() {
     fi
 
     if [ -z "$value" ]; then
-      project_show_warning "Empty value for key \"${PROJECT_TEXT_YELLOW}${key}${PROJECT_TEXT_RESET}\"."
+      project_show_warning "Empty value for key \"${p["_text_yellow"]}${key}${p["_text_reset"]}\"."
     fi
     jinja_arguments+=('-D')
     jinja_arguments+=("$key=$value")
@@ -552,28 +563,28 @@ project_render_template() {
 }
 
 _project_update_php_env() {
-  local project_name="${1:-${PROJECT_NAME}}"
+  local project_name="${1:-${p["project_name"]}}"
 
   declare -a project_tags=()
   _project_get_tags "$project_name" project_tags
 
 
   # If this project has tags.
-  if [ ${#project_tags[@]} -ne 0 ] && [ -z "$PROJECT_TAG" ]; then
+  if [ ${#project_tags[@]} -ne 0 ] && [ -z "${p["project_tag"]}" ]; then
     # Update php env for all tags.
     for project_tag in "${project_tags[@]}"; do
       _project_update_php_env_for_tag "$project_name" "$project_tag"
     done
   else
     # Update php env for the given tag or empty.
-    _project_update_php_env_for_tag "$project_name" "$PROJECT_TAG"
+    _project_update_php_env_for_tag "$project_name" "${p["project_tag"]}"
   fi
 }
 
 _project_get_env_value() {
   local project_name="$1"
   local variable_name="$2"
-  local project_tag="${3:-${PROJECT_TAG}}"
+  local project_tag="${3:-${p["project_tag"]}}"
   local default_value="$4"
 
   local project_path
@@ -601,11 +612,11 @@ _project_get_env_value() {
   shdotenv_arguments+=('value')
 
   local value
-  value=$("$__PROJECT_SCRIPT_PATH/lib/shdotenv/shdotenv" "${shdotenv_arguments[@]}")
+  value="$("${p["_script_path"]}/lib/shdotenv/shdotenv" "${shdotenv_arguments[@]}")"
 
   # Remove starting and trailing quotes.
-  value=${value#\"}
-  value=${value%\"}
+  value="${value#\"}"
+  value="${value%\"}"
 
   if [ -n "$value" ]; then
     echo "$value"
@@ -619,7 +630,7 @@ _project_get_env_files() {
   local project_tag="$2"
   local -n result=$3
   local project_path
-  project_path=$(_project_get_project_path_by_name "$project_name")
+  project_path="$(_project_get_project_path_by_name "$project_name")"
   _project_assert_project_exists "$project_name" "$project_path"
 
   result+=("$project_path/.env")
@@ -635,7 +646,7 @@ _project_update_php_env_for_tag() {
   local project_name="$1"
   local project_tag="$2"
   local project_path
-  project_path=$(_project_get_project_path_by_name "$project_name")
+  project_path="$(_project_get_project_path_by_name "$project_name")"
 
   declare -a env_files=()
   _project_get_env_files "$project_name" "$project_tag" env_files
@@ -646,7 +657,7 @@ _project_update_php_env_for_tag() {
     output_file="$project_path/env.${project_tag}.php"
   fi
 
-  _project_get_php_env_for_files "${env_files[@]}" > $output_file
+  _project_get_php_env_for_files "${env_files[@]}" > "$output_file"
 }
 
 # Each argument is treated as an env file and the output is written to stdout.
@@ -666,9 +677,8 @@ _project_get_php_env_for_files() {
   shdotenv_arguments+=('php')
 
   local output
-  output=$("$__PROJECT_SCRIPT_PATH/lib/shdotenv/shdotenv" "${shdotenv_arguments[@]}")
-
-  output=$(echo "$output" | sed '2i // Do not edit this file since it is generated. Run "project run update_php_env" to update it.')
+  output="$("${p["_script_path"]}/lib/shdotenv/shdotenv" "${shdotenv_arguments[@]}")"
+  output="$(echo "$output" | sed '2i // Do not edit this file since it is generated. Run "project run update_php_env" to update it.')"
   echo "$output"
 }
 
@@ -676,7 +686,7 @@ _project_get_tags() {
   local project_name="$1"
   local -n result=$2
   local tags
-  tags=$(_project_get_env_value "$project_name" "PROJECT_TAGS")
+  tags="$(_project_get_env_value "$project_name" "PROJECT_TAGS")"
   IFS=',' read -r -a result <<< "$tags"
 }
 
@@ -684,7 +694,7 @@ _project_get_logs_dir() {
   local project_name="$1"
   local default=".project/logs"
 
-  if [ "$project_name" == "$PROJECT_NAME" ]; then
+  if [ "$project_name" == "${p["project_name"]}" ]; then
     if [ -n "$PROJECT_LOGS_DIR" ]; then
       echo "$PROJECT_LOGS_DIR"
     else
