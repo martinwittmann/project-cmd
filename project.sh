@@ -5,12 +5,13 @@ declare -A p
 p["_script_path"]="$(realpath "${BASH_SOURCE[0]}" | xargs dirname)"
 source "${p["_script_path"]}/_setup.sh"
 
+  PROJECT_NAME=""
+  PROJECT_PATH=""
+  PROJECT_TAG=""
+
 _project_cmd() {
   # The path of project.sh.
 
-  local project_name=""
-  local project_path=""
-  local project_tag=""
   local command=""
 
   # Parse options
@@ -26,11 +27,11 @@ _project_cmd() {
         ;;
 
       p)
-        project_name="$OPTARG"
+        PROJECT_NAME="$OPTARG"
         ;;
 
       t)
-        project_tag="$OPTARG"
+        PROJECT_TAG="$OPTARG"
         ;;
 
       \?)
@@ -58,7 +59,7 @@ _project_cmd() {
 
   # This sets up project-cmd, but not a project. Each command script needs to call
   # _project_setup_project if it requires a project context.
-  _project_setup
+  _project_setup "$PROJECT_NAME" "$PROJECT_TAG"
 
   if [ -n "${p["setup_error"]}" ]; then
     project_show_error "Project-cmd setup error."

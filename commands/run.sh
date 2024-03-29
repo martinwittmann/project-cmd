@@ -7,7 +7,7 @@
   if [ -n "$script_name" ]; then
     shift
     _project_setup_project "$PROJECT_NAME" "$PROJECT_TAG"
-    _project_run_script "$PROJECT_NAME" "$PROJECT_TAG" "$script_name" "$@"
+    _project_run_script "$PROJECT_NAME" "$PROJECT_PATH" "$script_name" "$@"
   else
     echo "Run a script in the current project."
     echo "Usage: run SCRIPT_NAME"
