@@ -43,18 +43,16 @@ _project_get_project_path_by_name() {
 }
 
 _project_get_project_path() {
-  local current_path="$1"
-  local show_errors="${2:-1}"
-
-  if [ -z "$current_path" ]; then
-    current_path=$(pwd)
-  fi
+  local current_path="${1:-$(pwd)}"
 
   if [[ -v PROJECTS["$current_path"] ]]; then
+    # Found a projects with this path and return it.
     echo "$current_path"
-  elif [ "$current_path" == "/" ] && [ "$show_errors" == "1" ]; then
+  elif [ "$current_path" == "/" ]; then
+    # We hit the root directory and didn't find any projects.
     return 1
   else
+    # Try its parent.
     current_path=$(realpath "$current_path/..")
     _project_get_project_path "$current_path"
   fi
@@ -135,6 +133,7 @@ _project_run_script() {
   local project_name="$1"
   local project_path="$2"
   local script_name="$3"
+  local project_tag="$4"
   shift 3
   local script_filename
   script_filename="$(_project_get_script_path "$project_path" "$script_name")"
@@ -151,7 +150,7 @@ _project_run_script() {
     if [ "$project_name" == "$PROJECT_NAME" ]; then
       source "$script_filename"
     else
-      echo "$(_project_setup_project "$project_name" && source "$script_filename")"
+      echo "$(_project_setup_project "$project_name" "$project_tag" && source "$script_filename")"
     fi
   else
     project_show_error "$script_filename The script \"${TEXT_YELLOW}${script_name}${TEXT_RESET}\" does not exist in project ${TEXT_YELLOW}${project_name}${TEXT_RESET}."
@@ -430,13 +429,21 @@ project_is_production() {
 
 project_build_docker_images() {
   local dirnames="$1"
+  local basepath="$2"
+  local env="${3:-prod}"
+  local image_name_prefix="$4"
+
   if [ -z "$dirnames" ]; then
     project_show_error "You need to specify directory names, separated by ';' for which docker images will be built."
     return 1
   fi
-  local env="${2:-prod}"
-  local basepath
-  basepath="${3:-${p["_script_path"]}/docker/${dirname}}"
+
+  if [ -z "$basepath" ]; then
+    project_show_error "You need to provide a base path as second argument."
+    return 1
+  fi
+
+  basepath="$(realpath "$basepath")"
 
   if [ ! -d "$basepath" ]; then
     project_show_error "Directory \"${TEXT_YELLOW}${basepath}${TEXT_RESET}\" not found."
@@ -449,25 +456,30 @@ project_build_docker_images() {
 
   IFS=';'
   for dirname in $dirnames; do
-    project_build_global_docker_image "$dirname" "$env" "$basepath"
+    project_build_global_docker_image "$dirname" "$basepath" "$env" "$image_name_prefix"
   done
   unset IFS
 }
 project_build_global_docker_image() {
   project_start_docker 1
   local dirname="$1"
-  local basepath="${2:-${p["_script_path"]}/docker/${dirname}}"
+  local basepath="${2}"
   local env="${3:-prod}"
   local image_name_prefix="${4}"
 
-  local fullpath="$basepath/$dirname"
+  if [ -z "$basepath" ]; then
+    project_show_error "You need to provide a base path as second argument."
+    return 1
+  fi
 
+  basepath="$(realpath "$basepath")"
   if [ ! -d "$basepath" ]; then
     project_show_error "Directory \"${TEXT_YELLOW}${basepath}${TEXT_RESET}\" not found. Skipping."
     echo ""
     exit 1
   fi
 
+  local fullpath="$basepath/$dirname"
   if [ ! -d "$fullpath" ]; then
     project_show_error "Directory \"${TEXT_YELLOW}${fullpath}${TEXT_RESET}\" not found. Skipping."
     echo ""

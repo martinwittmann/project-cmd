@@ -1,8 +1,12 @@
 #!/bin/bash
+# Project-cmd command script.
+# Available variables:
+# - $project_name
+# - $project_tag
 
 # Executing everything in a subshell to not pollute the parent shell's variables.
 (
-  if [ "$#" -gt 0 ]; then
+  if [ "$#" -gt 1 ]; then
     dirnames="$1"
     basepath="${2:-${p["_script_path"]}/docker/${dirname}}"
     env="${3}"
@@ -17,8 +21,7 @@
     echo "                           then the following paths will be used as PATH for docker build:"
     echo "                           - BASE_PATH/hello-world"
     echo "                           - BASE_PATH/another_image"
-    echo "  [BASE_PATH]:    Used as path prefix for each directory name in IMAGES. This"
-    echo "                  defaults to [path-to-project-cmd]/docker"
+    echo "  BASE_PATH:      Used as path prefix for each directory name in IMAGES."
     echo "  [ENV]:          An optional global environment name like dev, prod,... Each"
     echo "                  Dockerfile will get the build argument APP_ENV with this value."
     echo "                  Additionally this will be used as tag for the built image if set."

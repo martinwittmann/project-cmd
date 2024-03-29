@@ -11,7 +11,6 @@ _project_cmd() {
   local project_name=""
   local project_path=""
   local project_tag=""
-  PROJECT_TAG=""
   local command=""
 
   # Parse options
@@ -19,8 +18,13 @@ _project_cmd() {
   # We need to reset OPTIND which should get written by getopts, but after
   # using the -t option once it keeps having an incorrect value.
   OPTIND=1
-  while getopts ":p:t:" opt; do
+  while getopts "vp:t:" opt; do
     case $opt in
+      v)
+        echo "Project-cmd version 0.3"
+        return 0
+        ;;
+
       p)
         project_name="$OPTARG"
         ;;
@@ -35,8 +39,11 @@ _project_cmd() {
         ;;
 
       :)
-        echo "Option -$OPTARG requires an argument." >&2
-        return 1
+
+        if [ "$OPTARG" != "v" ]; then
+          echo "Option -$OPTARG requires an argument." >&2
+          return 1
+        fi
         ;;
     esac
   done
@@ -50,11 +57,26 @@ _project_cmd() {
   fi
 
   # This sets up project-cmd, but not a project.
-  _project_setup "$project_name" "$project_tag"
+  _project_setup
 
-  if [ -n "$PROJECT_PATH" ]; then
-    project_name="$PROJECT_NAME"
-    project_path="$PROJECT_PATH"
+  if [ -z "$project_name" ]; then
+    # Set project name and path based on the current work dir, since none was set via the option -p.
+    if ! project_path=$(_project_get_project_path); then
+      project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" not found."
+      return 1
+    fi
+
+    if ! project_name=$(_project_get_project_name "$project_path"); then
+      project_show_error "No project found for path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
+      return 1
+    fi
+  else
+    # The -p option was used to set a project name. Add the corresponding path.
+    # Set project path for this project.
+    if ! project_path="$(_project_get_project_path_by_name "$project_name")"; then
+      project_show_error "Project \"${TEXT_YELLOW}${new_project_name}${TEXT_RESET}\" not found."
+      return 1
+    fi
   fi
 
   if [ -n "${p["setup_error"]}" ]; then
@@ -80,42 +102,33 @@ _project_cmd() {
     echo "Project commands:"
     echo "  These can be executed when in a project directory or when the project is set via the -p option."
     echo ""
-    echo "  compare_with_project   Compare/diff a file from this project with the same relative path in another project."
-    echo "                         Usage: compare_with_project FILE_OR_PATH PROJECT_NAME"
-    echo ""
-    echo "  get_env_value          Retrieve the value of an environment variable. PROJECT_NAME defaults to the current project"
-    echo "                         Usage: get_env_value VARIABLE_NAME [PROJECT_NAME]"
-    echo ""
-    echo "  restart                Shorthand for 'project run restart'. See the 'run' command."
-    echo "  run                    Executes a script for the current project."
-    echo "                         Usage: run SCRIPT_NAME [SCRIPT_ARGS] ..."
-    echo ""
-    echo "  start                  Shorthand for 'project run start'. See the 'run' command."
-    echo "  stop                   Shorthand for 'project run stop'. See the 'run' command."
-
+    echo "  compare_with_project Compare/diff a file from this project with the same relative path in another project."
+    echo "                       Usage: compare_with_project FILE_OR_PATH PROJECT_NAME"
+    echo "  get_env_value        Retrieve the value of an environment variable. PROJECT_NAME defaults to the current project"
+    echo "                       Usage: get_env_value VARIABLE_NAME [PROJECT_NAME]"
+    echo "  restart              Shorthand for 'project run restart'. See the 'run' command."
+    echo "  run                  Executes a script for the current project."
+    echo "                       Usage: run SCRIPT_NAME [SCRIPT_ARGS] ..."
+    echo "  start                Shorthand for 'project run start'. See the 'run' command."
+    echo "  stop                 Shorthand for 'project run stop'. See the 'run' command."
     echo ""
     echo ""
     echo "Global commands:"
     echo "  These can executed independent of the current work dir."
     echo ""
-    echo "  add                    Add a project."
-    echo "                         Usage: add [PROJECT_NAME] [PROJECT_PATH]"
-    echo ""
-    echo "  cd                     Change to another project. Shorthand for 'cd /path/to/my/project'."
-    echo "                         Usage: cd PROJECT_NAME"
-    echo ""
-    echo "  create                 Create and add a project based on a project template."
-    echo "                         Usage: create PROJECT_TEMPLATE NAME PROJECT_PATH"
-    echo ""
-    echo "  end                    Stops docker."
-    echo "  list                   List all registered project and their state."
-    echo ""
-    echo "  build_docker_images    Builds one ore more docker images located in a common base path."
-    echo "                         Usage: build_docker_images IMAGES BASE_PATH ENV"
-    echo ""
-    echo "  ps                     A shorthand for docker ps -a."
-    echo "  remove                 Removes a project by name. This only removes the project registration and does not delete project files."
-    echo "                         Usage: remove PROJECT_NAME"
+    echo "  add                  Add a project."
+    echo "                       Usage: add [PROJECT_NAME] [PROJECT_PATH]"
+    echo "  cd                   Change to another project. Shorthand for 'cd /path/to/my/project'."
+    echo "                       Usage: cd PROJECT_NAME"
+    echo "  create               Create and add a project based on a project template."
+    echo "                       Usage: create PROJECT_TEMPLATE NAME PROJECT_PATH"
+    echo "  end                  Stops docker."
+    echo "  list                 List all registered project and their state."
+    echo "  build_docker_images  Builds one ore more docker images located in a common base path."
+    echo "                       Usage: build_docker_images IMAGES BASE_PATH ENV"
+    echo "  ps                   A shorthand for docker ps -a."
+    echo "  remove               Removes a project by name. This only removes the project registration and does not delete project files."
+    echo "                       Usage: remove PROJECT_NAME"
     return 0
   fi
 }
