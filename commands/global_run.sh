@@ -1,16 +1,13 @@
 #!/bin/bash
 # Project-cmd command script.
-# Available variables:
-# - $project_name
-# - $project_tag
 
 # Executing everything in a subshell to not pollute the parent shell's variables.
 (
   script_name="$1"
   shift
-  if [ ! -z "$project_name" ]; then
+  if [ ! -z "$PROJECT_NAME" ]; then
     # Since some global scripts require a project we always set it up if possible.
-    _project_setup_project "$project_name" "$project_tag"
+    _project_setup_project "$PROJECT_NAME" "$PROJECT_TAG"
   fi
 
   source "${p["_script_path"]}/_global-scripts.sh"

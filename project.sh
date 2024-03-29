@@ -56,28 +56,9 @@ _project_cmd() {
     shift
   fi
 
-  # This sets up project-cmd, but not a project.
+  # This sets up project-cmd, but not a project. Each command script needs to call
+  # _project_setup_project if it requires a project context.
   _project_setup
-
-  if [ -z "$project_name" ]; then
-    # Set project name and path based on the current work dir, since none was set via the option -p.
-    if ! project_path=$(_project_get_project_path); then
-      project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" not found."
-      return 1
-    fi
-
-    if ! project_name=$(_project_get_project_name "$project_path"); then
-      project_show_error "No project found for path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
-      return 1
-    fi
-  else
-    # The -p option was used to set a project name. Add the corresponding path.
-    # Set project path for this project.
-    if ! project_path="$(_project_get_project_path_by_name "$project_name")"; then
-      project_show_error "Project \"${TEXT_YELLOW}${new_project_name}${TEXT_RESET}\" not found."
-      return 1
-    fi
-  fi
 
   if [ -n "${p["setup_error"]}" ]; then
     project_show_error "Project-cmd setup error."

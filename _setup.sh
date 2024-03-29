@@ -33,8 +33,19 @@ _project_setup_project() {
   PROJECT_NAME="$1"
   PROJECT_TAG="$2"
 
-  if ! PROJECT_PATH="$(_project_get_project_path_by_name "$PROJECT_NAME")"; then
-    project_show_error "Project \"${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET}\" not found."
+  if [ -z "$PROJECT_NAME" ]; then
+    # Set project name and path based on the current work dir, since none was set via the option -p.
+    if ! PROJECT_PATH=$(_project_get_project_path); then
+      project_show_error "Project \"${TEXT_YELLOW}${PROJECT_NAME}${TEXT_RESET}\" not found."
+      return 1
+    fi
+
+    if ! PROJECT_NAME=$(_project_get_project_name "$PROJECT_PATH"); then
+      project_show_error "No project found for path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
+      return 1
+    fi
+  elif ! PROJECT_PATH="$(_project_get_project_path_by_name "$PROJECT_NAME")"; then
+    project_show_error "Project \"${TEXT_YELLOW}${PROJECT_PATH}${TEXT_RESET}\" not found."
     return 1
   fi
 

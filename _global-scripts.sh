@@ -481,25 +481,39 @@ _project_global_script_set_up_backups() {
     ssh_user="$PROJECT_BACKUP_SSH_USER"
     ssh_password="$PROJECT_BACKUP_SSH_PASSWORD"
     borg_passphrase="$PROJECT_BORG_BACKUP_PASSPHRASE"
+    backup_target_path="$PROJECT_BACKUP_TARGET_PATH"
   else
     ssh_host=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_HOST)
     ssh_port=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PORT "" "22")
     ssh_user=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_USER)
     ssh_password=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PASSWORD)
     borg_passphrase=$(_project_get_env_value "$project_name" PROJECT_BORG_BACKUP_PASSPHRASE)
+    backup_target_path=$(_project_get_env_value "$project_name" PROJECT_BACKUP_TARGET_PATH)
+  fi
+
+  local public_key_file
+  if [ -f "~/.ssh/id_rsa.pub" ]; then
+    public_key_file="~/.ssh/id_rsa.pub"
+  elif [ -f "~/.ssh/id_dsa.pub" ]; then
+    public_key_file="~/.ssh/id_dsa.pub"
+  else
+    project_show_error "Could not detect a public key file in \"${PROJEXT_TEXT_YELLOW}$(realpath ~/)${PROJEXT_TEXT_RESET}\"."
   fi
 
   # Allow ssh connections to the storage box.
   # We're doing it this way to not have the ssh password be written to bash history.
   (
-    # shellcheck disable=SC2034
-    # Open and immediately close the ssh connection to add it to the known hosts.
-    SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" "exit"
-    SSHPASS="$ssh_password" cat ~/.ssh/id_rsa.pub | sshpass -e ssh "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
+    # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
+    cat ~/.ssh/id_rsa.pub | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
   )
+  project_show_success "Set up ssh connection + public key authentication to \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\"."
 
-  #(
-    #BORG_PASSPHRASE="$passphrase"
-    #borg init --encryption=repokey ${ssh_url}/./${backup_target_path}
-  #)
+  local ssh_url="ssh://${ssh_host}:${ssh_port}/./${backup_target_path}"
+
+  ssh "${ssh_user}@${ssh_host}" -p "$ssh_port" "[ -f '$backup_target_path/config' ] && echo '1' || echo '0'"
+
+  (
+    BORG_PASSPHRASE="$passphrase"
+    borg init --encryption=repokey ${ssh_url}/./${backup_target_path}
+  )
 }

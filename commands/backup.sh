@@ -7,6 +7,7 @@
 command="$1"
 
 if [ -n "$command" ]; then
+  echo "Do back up..."
 else
     echo "Do backups via borg backup."
     echo "Usage: backup COMMAND"

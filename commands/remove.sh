@@ -1,8 +1,5 @@
 #!/bin/bash
 # Project-cmd command script.
-# Available variables:
-# - $project_name
-# - $project_tag
 
 project_name_to_remove="$1"
 if [ -z "$project_name_to_remove" ]; then

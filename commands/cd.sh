@@ -1,8 +1,5 @@
 #!/bin/bash
 # Project-cmd command script.
-# Available variables:
-# - $project_name
-# - $project_tag
 
 new_project_name="$1"
 if [ -z "$new_project_name" ]; then

@@ -1,8 +1,5 @@
 #!/bin/bash
 # Project-cmd command script.
-# Available variables:
-# - $project_name
-# - $project_tag
 
 template="$1"
 new_project_name="$2"

@@ -1,8 +1,5 @@
 #!/bin/bash
 # Project-cmd command script.
-# Available variables:
-# - $project_name
-# - $project_tag
 
 # Executing everything in a subshell to not pollute the parent shell's variables.
 (
