@@ -490,10 +490,12 @@ _project_global_script_set_up_backups() {
   fi
 
   # Allow ssh connections to the storage box.
+  # We're doing it this way to not have the ssh password be written to bash history.
   (
     # shellcheck disable=SC2034
-    SSHPASS="$ssh_password"
-    sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port"
+    # Open and immediately close the ssh connection to add it to the known hosts.
+    SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" "exit"
+    SSHPASS="$ssh_password" cat ~/.ssh/id_rsa.pub | sshpass -e ssh "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
   )
 
   #(
