@@ -12,7 +12,7 @@ _project_populate_projects_array() {
         echo "Could not read $symlink"
         return 1
       fi
-      p_projects["$project_path"]=$(basename "$symlink")
+      PROJECTS["$project_path"]=$(basename "$symlink")
     fi
   done
 }
@@ -31,8 +31,8 @@ _project_get_project_path_by_name() {
   project_name="$1"
   local item_name
 
-  for item_path in "${!p_projects[@]}"; do
-    local item_name="${p_projects["$item_path"]}"
+  for item_path in "${!PROJECTS[@]}"; do
+    local item_name="${PROJECTS["$item_path"]}"
     if [ "$project_name" == "$item_name" ]; then
       echo "$item_path"
       return 0
@@ -50,7 +50,7 @@ _project_get_project_path() {
     current_path=$(pwd)
   fi
 
-  if [[ -v p_projects["$current_path"] ]]; then
+  if [[ -v PROJECTS["$current_path"] ]]; then
     echo "$current_path"
   elif [ "$current_path" == "/" ] && [ "$show_errors" == "1" ]; then
     return 1
@@ -68,10 +68,10 @@ _project_get_project_name() {
     project_path=$(_project_get_project_path)
   fi
 
-  if [[ -v p_projects["$project_path"] ]]; then
-    echo "${p_projects["$project_path"]}"
+  if [[ -v PROJECTS["$project_path"] ]]; then
+    echo "${PROJECTS["$project_path"]}"
   elif [ "$show_errors" == "1" ]; then
-    project_show_error "Project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\" not found."
+    project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" not found."
     return 1
   fi
 }
@@ -125,7 +125,7 @@ _project_load_script() {
 
   if [ "$(type -t "$function_name")" != "function" ]; then
     if [ "$show_errors" == "1" ]; then
-      project_show_warning "The script \"${p["_text_yellow"]}${script_name}${p["_text_reset"]}\" does not exist in project ${p["_text_yellow"]}${project_name}${p["_text_reset"]}."
+      project_show_warning "The script \"${TEXT_YELLOW}${script_name}${TEXT_RESET}\" does not exist in project ${TEXT_YELLOW}${project_name}${TEXT_RESET}."
     fi
     return 1
   fi
@@ -154,13 +154,13 @@ _project_run_script() {
       echo "$(_project_setup_project "$project_name" && source "$script_filename")"
     fi
   else
-    project_show_error "$script_filename The script \"${p["_text_yellow"]}${script_name}${p["_text_reset"]}\" does not exist in project ${p["_text_yellow"]}${project_name}${p["_text_reset"]}."
+    project_show_error "$script_filename The script \"${TEXT_YELLOW}${script_name}${TEXT_RESET}\" does not exist in project ${TEXT_YELLOW}${project_name}${TEXT_RESET}."
   fi
 }
 
 _project_get_project_names() {
-  for item_path in "${!p_projects[@]}"; do
-    echo "${p_projects["$item_path"]}"
+  for item_path in "${!PROJECTS[@]}"; do
+    echo "${PROJECTS["$item_path"]}"
   done
 }
 
@@ -174,14 +174,14 @@ _project_get_project_status() {
   if [ -f "$script_filename" ]; then
     project_status="$(_project_run_script "$project_name" "$project_path" "status" "short")"
   else
-    project_status="${p["_text_gray"]}unknown${p["_text_reset"]}"
+    project_status="${TEXT_GRAY}unknown${TEXT_RESET}"
   fi
 
   name_padding="$(printf "%${name_padding}s")"
   local path_padding="$((60 - ${#project_path}))"
   path_padding="$(printf "%${path_padding}s")"
 
-  echo -e " ${p["_text_yellow"]}${project_name}${name_padding}${p["_text_reset"]} $project_path${path_padding}$project_status"
+  echo -e " ${TEXT_YELLOW}${project_name}${name_padding}${TEXT_RESET} $project_path${path_padding}$project_status"
 }
 
 project_add_project() {
@@ -201,14 +201,14 @@ project_add_project() {
   project_path="$(realpath "$project_path")"
 
   if [ ! -d "$project_path" ]; then
-    project_show_error "The project path \"${p["_text_yellow"]}${project_path}${p["_text_reset"]}\" does not exist."
+    project_show_error "The project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" does not exist."
     return 1
   fi
   local symlink="${p["projects_path"]}/$project_name"
   sudo ln -s "$project_path" "$symlink"
 
   if [ "$quiet" == "0" ]; then
-    project_show_success "Added project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
+    project_show_success "Added project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
   fi
 }
 
@@ -219,7 +219,7 @@ project_create_from_template() {
 
   local template_path="${p["_script_path"]}/project-templates/$project_template"
   if [ -z "$project_template" ] || [ ! -d "$template_path" ]; then
-    project_show_error "Could not find project template \"${p["_text_yellow"]}${project_template}${p["_text_reset"]}\"."
+    project_show_error "Could not find project template \"${TEXT_YELLOW}${project_template}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -229,17 +229,17 @@ project_create_from_template() {
   fi
 
   if project_exists "$project_name"; then
-    project_show_error "A project with the name \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\" already exists."
+    project_show_error "A project with the name \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" already exists."
     return 1
   fi
 
   if [ ! -d "$project_path" ] && ! mkdir -p "$project_path"; then
-    project_show_error "Could not create project directory \"${p["_text_yellow"]}${project_path}${p["_text_reset"]}\"."
+    project_show_error "Could not create project directory \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
     return 1
   fi
 
   if ! rsync -a "$template_path/" "$project_path"; then
-    project_show_error "Could not copy project template to \"${p["_text_yellow"]}${project_path}${p["_text_reset"]}\"."
+    project_show_error "Could not copy project template to \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -249,7 +249,7 @@ project_create_from_template() {
   sed -i "s/^PROJECT_NAME=.*/PROJECT_NAME=$project_name/" "$project_path/.env"
 
   if ! project_add_project "$project_name" "$project_path"; then
-    project_show_error "Could not add project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
+    project_show_error "Could not add project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -264,7 +264,7 @@ project_create_from_template() {
     _project_run_script "$project_name" "$project_path" "_init_project"
   fi
 
-  project_show_success "Created project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
+  project_show_success "Created project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
 
   cd "$old_pwd"
 }
@@ -349,18 +349,18 @@ _project_get_project_status_via_docker_compose() {
 _project_status_output() {
   local status="$1"
   if [ "$status" == "up" ]; then
-    echo -e "${p["_text_green"]}${status}${p["_text_reset"]}"
+    echo -e "${TEXT_GREEN}${status}${TEXT_RESET}"
   elif [ "$status" == "partial" ]; then
-    echo -e "${p["_text_green"]}${status}${p["_text_reset"]}"
+    echo -e "${TEXT_GREEN}${status}${TEXT_RESET}"
   else
-    echo -e "${p["_text_red"]}${status}${p["_text_reset"]}"
+    echo -e "${TEXT_RED}${status}${TEXT_RESET}"
   fi
 }
 
 _project_print_url() {
   local url="$1"
-  echo -en "\nProject ${p["_text_yellow"]}$PROJECT_NAME${p["_text_reset"]} available at: "
-  echo -e "${p["_text_cyan"]}\e]8;;$url\a$url\e]8;;\a${p["_text_reset"]}"
+  echo -en "\nProject ${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET} available at: "
+  echo -e "${TEXT_CYAN}\e]8;;$url\a$url\e]8;;\a${TEXT_RESET}"
   echo ""
 }
 
@@ -393,7 +393,7 @@ _project_assert_project_exists() {
   fi
 
   if [ -z "$project_name" ] || [ -z "$project_path" ] || [ ! -d "$project_path" ]; then
-    project_show_error "Project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\" not found."
+    project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" not found."
     return 1
   fi
 
@@ -439,7 +439,7 @@ project_build_docker_images() {
   basepath="${3:-${p["_script_path"]}/docker/${dirname}}"
 
   if [ ! -d "$basepath" ]; then
-    project_show_error "Directory \"${p["_text_yellow"]}${basepath}${p["_text_reset"]}\" not found."
+    project_show_error "Directory \"${TEXT_YELLOW}${basepath}${TEXT_RESET}\" not found."
     return 1
   fi
 
@@ -463,13 +463,13 @@ project_build_global_docker_image() {
   local fullpath="$basepath/$dirname"
 
   if [ ! -d "$basepath" ]; then
-    project_show_error "Directory \"${p["_text_yellow"]}${basepath}${p["_text_reset"]}\" not found. Skipping."
+    project_show_error "Directory \"${TEXT_YELLOW}${basepath}${TEXT_RESET}\" not found. Skipping."
     echo ""
     exit 1
   fi
 
   if [ ! -d "$fullpath" ]; then
-    project_show_error "Directory \"${p["_text_yellow"]}${fullpath}${p["_text_reset"]}\" not found. Skipping."
+    project_show_error "Directory \"${TEXT_YELLOW}${fullpath}${TEXT_RESET}\" not found. Skipping."
     echo ""
     exit 1
   fi
@@ -479,7 +479,7 @@ project_build_global_docker_image() {
     image_name="${image_name}:$env"
   fi
 
-  project_show_message "Building image \"${p["_text_yellow"]}${image_name}${p["_text_reset"]}\"..."
+  project_show_message "Building image \"${TEXT_YELLOW}${image_name}${TEXT_RESET}\"..."
   docker build --build-arg APP_ENV="$env" -t "$image_name" "$fullpath"
   project_show_success "Done."
   echo ""
@@ -507,7 +507,7 @@ project_get_template_filename() {
   template_file="${template_arg#*:}"
 
   if [ -z "$other_project_name" ] || [ -z "$template_file" ]; then
-    project_show_error "Invalid template argument \"${p["_text_yellow"]}${template_arg}${p["_text_reset"]}\".\nPlease use the format \"${p["_text_yellow"]}${template_argument_format}${p["_text_reset"]}\" and make sure the project and the corresponding path ([project_name]/.project/templates/[template]/path) exists."
+    project_show_error "Invalid template argument \"${TEXT_YELLOW}${template_arg}${TEXT_RESET}\".\nPlease use the format \"${TEXT_YELLOW}${template_argument_format}${TEXT_RESET}\" and make sure the project and the corresponding path ([project_name]/.project/templates/[template]/path) exists."
     return 1
   fi
 
@@ -532,7 +532,7 @@ project_render_template() {
   local template_argument_format="[project_name]:[path]/[to]/[template]"
 
   if [ -z "$template_arg" ]; then
-    project_show_error -e "${p["_status_error"]} You need to specify a template in the form \"${p["_text_yellow"]}${template_argument_format}${p["_text_reset"]}\" as first argument."
+    project_show_error -e "${p["_status_error"]} You need to specify a template in the form \"${TEXT_YELLOW}${template_argument_format}${TEXT_RESET}\" as first argument."
     return 1;
   fi
 
@@ -540,7 +540,7 @@ project_render_template() {
   template_file="$(project_get_template_filename "$template_arg")"
 
   if [ ! -f "$template_file" ]; then
-    project_show_error "Cannot find template \"${p["_text_yellow"]}${template_file}${p["_text_reset"]}\"."
+    project_show_error "Cannot find template \"${TEXT_YELLOW}${template_file}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -559,7 +559,7 @@ project_render_template() {
     fi
 
     if [ -z "$value" ]; then
-      project_show_warning "Empty value for key \"${p["_text_yellow"]}${key}${p["_text_reset"]}\"."
+      project_show_warning "Empty value for key \"${TEXT_YELLOW}${key}${TEXT_RESET}\"."
     fi
     jinja_arguments+=('-D')
     jinja_arguments+=("$key=$value")

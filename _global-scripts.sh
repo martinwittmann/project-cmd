@@ -25,7 +25,7 @@ _project_global_script_start() {
     # We always daemonize and remove orphans to not accumulate old containers.
     docker compose -f "$compose_file" up -d --remove-orphans
   else
-    project_show_error "I don\'t know how to start project \"${p["_text_yellow"]}$PROJECT_NAME${p["_text_reset"]}\" since it is not configured to use docker and no start script is specified."
+    project_show_error "I don\'t know how to start project \"${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET}\" since it is not configured to use docker and no start script is specified."
     return 1
   fi
 }
@@ -105,7 +105,7 @@ _project_global_script_mysql_dump() {
   # Strip the project path from the beginning of $dump_file.
   local short_name="${dump_file#$PROJECT_PATH}"
 
-  echo -e "Creating database dump at \"${p["_text_yellow"]}${short_name}${p["_text_reset"]}\"..."
+  echo -e "Creating database dump at \"${TEXT_YELLOW}${short_name}${TEXT_RESET}\"..."
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
     docker exec -it "$PROJECT_DB_CONTAINER_NAME" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   else
@@ -122,7 +122,7 @@ _project_global_script_mysql_dump() {
 _project_global_script_import_mysql_dump() {
   local dump_file="$1"
   if [ ! -f "$dump_file" ]; then
-    project_show_error "Could not find sql dump: \"${p["_text_yellow"]}${dump_file}${p["_text_reset"]}\"."
+    project_show_error "Could not find sql dump: \"${TEXT_YELLOW}${dump_file}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -250,12 +250,12 @@ _project_global_script_compare_with_project() {
   relative_filename="${filename#$project_path}"
 
   if [ ! -f "$filename" ] && [ ! -d "$filename" ]; then
-    project_show_error "Could not find file \"${p["_text_yellow"]}${filename}${p["_text_reset"]}\" in this project."
+    project_show_error "Could not find file \"${TEXT_YELLOW}${filename}${TEXT_RESET}\" in this project."
     return 1
   fi
 
   if [ ! $? -eq 0 ]; then
-    project_show_error "Could not find project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
+    project_show_error "Could not find project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -264,7 +264,7 @@ _project_global_script_compare_with_project() {
   local filename_in_other_project="$other_project_path/$relative_filename"
 
   if [ ! -f "$filename_in_other_project" ] && [ ! -d "$filename_in_other_project" ]; then
-    project_show_error "Could not find file \"${p["_text_yellow"]}${filename_in_other_project}${p["_text_reset"]}\" in project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\"."
+    project_show_error "Could not find file \"${TEXT_YELLOW}${filename_in_other_project}${TEXT_RESET}\" in project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -318,7 +318,7 @@ _project_global_script_create_nginx_config() {
   fi
 
   if [ -f "$output_file" ] && [ "$overwrite_existing" -eq 0 ]; then
-    project_show_error "The output file \"${p["_text_yellow"]}${output_file}${p["_text_reset"]}\" already exists.\nSet the third argument of the create_nginx_config global script to 1 to allow overwriting it."
+    project_show_error "The output file \"${TEXT_YELLOW}${output_file}${TEXT_RESET}\" already exists.\nSet the third argument of the create_nginx_config global script to 1 to allow overwriting it."
     return 1
   fi
 
@@ -348,7 +348,7 @@ _project_global_script_create_nginx_config() {
   > "$output_file"
 
   if [ $? -eq 0 ]; then
-    project_show_success "Created nginx configuration \"${p["_text_yellow"]}${output_file}${p["_text_reset"]}\"."
+    project_show_success "Created nginx configuration \"${TEXT_YELLOW}${output_file}${TEXT_RESET}\"."
   fi
 }
 

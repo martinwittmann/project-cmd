@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Executing everthing in a subshell to not pollute the parent shell's variables.
+# Executing everything in a subshell to not pollute the parent shell's variables.
 (
   if ! project_path="$(_project_get_project_path)"; then
     project_show_error "No project found in current dir or any parent dirs."

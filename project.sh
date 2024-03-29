@@ -67,7 +67,7 @@ _project_cmd() {
     source "$command_file"
   else
     if [ -n "$command" ]; then
-      project_show_error "Unknown command \"${p["_text_yellow"]}${command}${p["_text_reset"]}\"."
+      project_show_error "Unknown command \"${TEXT_YELLOW}${command}${TEXT_RESET}\"."
     fi
 
     # If no valid command was given, show usage.
@@ -83,8 +83,15 @@ _project_cmd() {
     echo "  compare_with_project   Compare/diff a file from this project with the same relative path in another project."
     echo "                         Usage: compare_with_project FILE_OR_PATH PROJECT_NAME"
     echo ""
-    echo "  get_env_value          Retrieve the value of an environment variable. PROJECT_NAME defaults to the current project".
+    echo "  get_env_value          Retrieve the value of an environment variable. PROJECT_NAME defaults to the current project"
     echo "                         Usage: get_env_value VARIABLE_NAME [PROJECT_NAME]"
+    echo ""
+    echo "  restart                Shorthand for 'project run restart'. See the 'run' command."
+    echo "  run                    Executes a script for the current project."
+    echo "                         Usage: run SCRIPT_NAME [SCRIPT_ARGS] ..."
+    echo ""
+    echo "  start                  Shorthand for 'project run start'. See the 'run' command."
+    echo "  stop                   Shorthand for 'project run stop'. See the 'run' command."
 
     echo ""
     echo ""
@@ -94,6 +101,9 @@ _project_cmd() {
     echo "  add                    Add a project."
     echo "                         Usage: add [PROJECT_NAME] [PROJECT_PATH]"
     echo ""
+    echo "  cd                     Change to another project. Shorthand for 'cd /path/to/my/project'."
+    echo "                         Usage: cd PROJECT_NAME"
+    echo ""
     echo "  create                 Create and add a project based on a project template."
     echo "                         Usage: create PROJECT_TEMPLATE NAME PROJECT_PATH"
     echo ""
@@ -101,19 +111,6 @@ _project_cmd() {
     echo "  list                   List all registered project and their state."
     echo ""
     echo "  build_docker_images    Builds one ore more docker images located in a common base path."
-    echo "                         Arguments:"
-    echo "                           IMAGES:         Names of directories inside BASE_PATH that contain docker files,"
-    echo "                                           separated by ';'. These will also be used as image names."
-    echo "                                           Example: If IMAGES has a value of \"hello-world;another_image\""
-    echo "                                                    then the following paths will be used as PATH for docker build:"
-    echo "                                                    - BASE_PATH/hello-world"
-    echo "                                                    - BASE_PATH/another_image"
-    echo "                           BASE_PATH:      Used as path prefix for each directory name in IMAGES. This"
-    echo "                                           defaults to [path-to-project-cmd]/docker"
-    echo "                           [ENV]:          An optional global environment name like dev, prod,... Each"
-    echo "                                           Dockerfile will get the build argument APP_ENV with this value."
-    echo "                                           Additionally this will be used as tag for the built image if set."
-    echo "                           [IMAGE_PREFIX]: This will be used as prefix for each image name if set."
     echo "                         Usage: build_docker_images IMAGES BASE_PATH ENV"
     echo ""
     echo "  ps                     A shorthand for docker ps -a."

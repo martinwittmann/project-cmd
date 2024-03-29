@@ -12,7 +12,7 @@ fi
 
 project_name="$(_project_get_project_name "$project_path" "0")"
 if [ -z "$project_name" ]; then
-  project_show_error "Project \"${p["_text_yellow"]}${project_name}${p["_text_reset"]}\" not found."
+  project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" not found."
   return 1
 fi
 

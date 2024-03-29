@@ -1,23 +1,21 @@
 #!/bin/bash
 
 # The list of projects. Each key is the path, each value is the project's name.
-declare -A p_projects
-# The current project's environment variables / values.
-declare -A p_env
+declare -A PROJECTS
+
+  # Static variables for easy text formatting.
+  TEXT_RESET="\e[0m"
+  TEXT_RED="\e[31m"
+  TEXT_GREEN="\e[32m"
+  TEXT_GRAY="\e[2;37m"
+  TEXT_YELLOW="\e[33m"
+  TEXT_CYAN="\e[36m"
+  TEXT_BOLD="\e[1m"
 
 _project_setup() {
-  # Static variables for easy text formatting.
-  p["_text_reset"]="\e[0m"
-  p["_text_red"]="\e[31m"
-  p["_text_green"]="\e[32m"
-  p["_text_gray"]="\e[2;37m"
-  p["_text_yellow"]="\e[33m"
-  p["_text_cyan"]="\e[36m"
-  p["_text_bold"]="\e[1m"
-
-  p["_status_success"]="${p["_text_green"]}${p["_text_bold"]}[OK]${p["_text_reset"]}"
-  p["_status_warning"]="${p["_text_yellow"]}${p["_text_bold"]}[WARNING]${p["_text_reset"]}"
-  p["_status_error"]="${p["_text_red"]}${p["_text_bold"]}[ERROR]${p["_text_reset"]}"
+  p["_status_success"]="${TEXT_GREEN}${TEXT_BOLD}[OK]${TEXT_RESET}"
+  p["_status_warning"]="${TEXT_YELLOW}${TEXT_BOLD}[WARNING]${TEXT_RESET}"
+  p["_status_error"]="${TEXT_RED}${TEXT_BOLD}[ERROR]${TEXT_RESET}"
 
 
   p["project_name"]="$1"
@@ -39,7 +37,7 @@ _project_setup() {
   else
     p["project_path"]="$(realpath "${p["projects_path"]}/$PROJECT_NAME")"
     if [ ! -d "$PROJECT_PATH" ]; then
-      project_show_error "Project not found: \"${p["_text_yellow"]}$PROJECT_PATH${p["_text_reset"]}\"."
+      project_show_error "Project not found: \"${TEXT_YELLOW}$PROJECT_PATH${TEXT_RESET}\"."
       return 1
     fi
   fi
@@ -50,7 +48,7 @@ _project_setup_project() {
   PROJECT_PATH="$(_project_get_project_path_by_name "$PROJECT_NAME")"
 
   if [ $? -ne 0 ]; then
-    project_show_error "Project \"${p["_text_yellow"]}$PROJECT_NAME${p["_text_reset"]}\" not found."
+    project_show_error "Project \"${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET}\" not found."
     return 1
   fi
 
