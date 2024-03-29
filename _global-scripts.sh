@@ -437,3 +437,67 @@ _project_global_script_create_nginx_log_files() {
 _project_global_script_end() {
   sudo systemctl stop docker
 }
+
+_project_global_script_create_passphrase() {
+  local length=${1:-24}
+  # Try to use openssl and fall back to urandom
+  if type openssl &> /dev/null; then
+    openssl rand -base64 $((length * 3/4)) | tr -d '\n' | tr -d '='
+  else
+    tr -dc '[:alnum:]' < /dev/urandom | head -c $length
+  fi
+}
+
+_project_global_script_create_backup_passphrase() {
+  local passphrase
+  passphrase=$(project_run_global_script create_passphrase)
+
+  declare -a env_files=()
+  _project_get_env_files "$PROJECT_NAME" "$PROJECT_TAG" env_files
+  local env_file="${env_files[0]}"
+  project_set_env_file_variable "$env_file" "PROJECT_BORG_BACKUP_PASSPHRASE" "$passphrase"
+}
+
+_project_global_script_set_up_backups() {
+  local type="$1"
+  local project_name="${2:-${PROJECT_NAME}}"
+
+  if [ "$type" != "borg" ]; then
+    project_show_error "Only borg backup via ssh is supported at the moment."
+    return 1
+  fi
+  #project_run_global_script create_backup_passphrase
+
+  local ssh_host
+  local ssh_port
+  local ssh_user
+  local ssh_password
+  local borg_passphrase
+  local backup_target_path
+
+  if [ "$project_name" == "$PROJECT_NAME" ]; then
+    ssh_host="$PROJECT_BACKUP_SSH_HOST"
+    ssh_port="${PROJECT_BACKUP_SSH_PORT:-22}"
+    ssh_user="$PROJECT_BACKUP_SSH_USER"
+    ssh_password="$PROJECT_BACKUP_SSH_PASSWORD"
+    borg_passphrase="$PROJECT_BORG_BACKUP_PASSPHRASE"
+  else
+    ssh_host=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_HOST)
+    ssh_port=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PORT "" "22")
+    ssh_user=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_USER)
+    ssh_password=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PASSWORD)
+    borg_passphrase=$(_project_get_env_value "$project_name" PROJECT_BORG_BACKUP_PASSPHRASE)
+  fi
+
+  # Allow ssh connections to the storage box.
+  (
+    # shellcheck disable=SC2034
+    SSHPASS="$ssh_password"
+    sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port"
+  )
+
+  #(
+    #BORG_PASSPHRASE="$passphrase"
+    #borg init --encryption=repokey ${ssh_url}/./${backup_target_path}
+  #)
+}

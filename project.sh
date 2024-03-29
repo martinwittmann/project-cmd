@@ -123,6 +123,7 @@ _project_cmd() {
     echo "  create               Create and add a project based on a project template."
     echo "                       Usage: create PROJECT_TEMPLATE NAME PROJECT_PATH"
     echo "  end                  Stops docker."
+    echo "  global_run           Executes one of the built-in global scripts."
     echo "  list                 List all registered project and their state."
     echo "  build_docker_images  Builds one ore more docker images located in a common base path."
     echo "                       Usage: build_docker_images IMAGES BASE_PATH ENV"

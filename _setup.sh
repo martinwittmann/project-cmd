@@ -32,18 +32,16 @@ _project_setup() {
 _project_setup_project() {
   PROJECT_NAME="$1"
   PROJECT_TAG="$2"
-  PROJECT_PATH="$(_project_get_project_path_by_name "$PROJECT_NAME")"
 
-  if [ $? -ne 0 ]; then
+  if ! PROJECT_PATH="$(_project_get_project_path_by_name "$PROJECT_NAME")"; then
     project_show_error "Project \"${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET}\" not found."
     return 1
   fi
 
   _project_assert_project_exists "$PROJECT_NAME" "$PROJECT_PATH"
-  local scripts_path
-  scripts_path="$(_project_get_scripts_path "$PROJECT_PATH")"
 
-  if [ $? -ne 0 ]; then
+  local scripts_path
+  if ! scripts_path="$(_project_get_scripts_path "$PROJECT_PATH")"; then
     project_show_error "Project scripts directory \"$scripts_path\" not found."
     p["setup_error"]="1"
   fi

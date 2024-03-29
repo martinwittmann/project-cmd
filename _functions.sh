@@ -647,6 +647,24 @@ _project_get_env_value() {
   fi
 }
 
+_project_get_env_value_from_file() {
+  local env_file="$1"
+  local variable_name="$2"
+  local default_value="$4"
+  local value
+  value=$("${p["_script_path"]}/lib/shdotenv/shdotenv" -e "$env_file" --grep "$variable_name" -f value)
+
+  # Remove starting and trailing quotes.
+  value="${value#\"}"
+  value="${value%\"}"
+
+  if [ -n "$value" ]; then
+    echo "$value"
+  else
+    echo "$default_value"
+  fi
+}
+
 _project_get_env_files() {
   local project_name="$1"
   local project_tag="$2"
@@ -725,5 +743,31 @@ _project_get_logs_dir() {
   else
     # Retrieve the value from the project's env file.
     _project_get_env_value "$project_name" PROJECT_LOGS_DIR "" "$default"
+  fi
+}
+
+project_set_env_file_variable() {
+  local env_file="$1"
+  local variable_name="$2"
+  local value="$3"
+  local overwrite="${4:-0}"
+
+  env_file=$(realpath "$env_file")
+  if [ ! -f "$env_file" ]; then
+    project_show_error "Could not find env file \"${TEXT_YELLOW}${env_file}${TEXT_RESET}\"."
+  fi
+
+  local current_value
+  current_value=$(_project_get_env_value_from_file "$env_file"  "$variable_name")
+
+  if [ -z "$current_value" ]; then
+    echo "${variable_name}=\"${value}\"" >> "$env_file"
+  else
+    if [ "$overwrite" == "0" ]; then
+      project_show_warning "The variable \"${TEXT_YELLOW}${variable_name}${TEXT_RESET}\" already exists in file \"${TEXT_YELLOW}${env_file}${TEXT_RESET}\"."
+      return 1
+    else
+      sed -i "s/^${variable_name}.*/${variable_name}=\"$value\"/" "$env_file"
+    fi
   fi
 }

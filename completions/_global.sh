@@ -67,10 +67,15 @@ _project_complete_tag_name() {
   local cur="$1"
   local project_path
   project_path=$(_project_get_project_path)
+
+  local project_name
+  project_name=$(_project_get_project_name "$project_path")
+
   local env_file
   env_file="$project_path/.env"
+
   local tags
-  tags=$(grep "^PROJECT_TAGS=" "$env_file" | cut -d'=' -f2)
+  tags=$(_project_get_env_value "$project_name" PROJECT_TAGS)
   IFS=',' read -r -a tags_list <<< "$tags"
   COMPREPLY=($(compgen -W "${tags_list[*]}" -- $cur))
 }
