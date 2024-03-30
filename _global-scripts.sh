@@ -492,19 +492,20 @@ _project_global_script_set_up_backups() {
   fi
 
   local public_key_file
-  if [ -f "~/.ssh/id_rsa.pub" ]; then
-    public_key_file="~/.ssh/id_rsa.pub"
-  elif [ -f "~/.ssh/id_dsa.pub" ]; then
-    public_key_file="~/.ssh/id_dsa.pub"
+  if [ -f "$HOME/.ssh/id_rsa.pub" ]; then
+    public_key_file="$HOME/.ssh/id_rsa.pub"
+  elif [ -f "$HOME/.ssh/id_dsa.pub" ]; then
+    public_key_file="$HOME/.ssh/id_dsa.pub"
   else
-    project_show_error "Could not detect a public key file in \"${PROJEXT_TEXT_YELLOW}$(realpath ~/)${PROJEXT_TEXT_RESET}\"."
+    project_show_error "Could not detect a public key file in \"${PROJEXT_TEXT_YELLOW}${HOME}${PROJEXT_TEXT_RESET}\"."
+    return 1
   fi
 
   # Allow ssh connections to the storage box.
   # We're doing it this way to not have the ssh password be written to bash history.
   (
     # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
-    cat ~/.ssh/id_rsa.pub | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
+    cat ${HOME}/.ssh/id_rsa.pub | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
   )
   project_show_success "Set up ssh connection + public key authentication to \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\"."
 
