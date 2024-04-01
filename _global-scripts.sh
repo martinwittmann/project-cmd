@@ -506,16 +506,23 @@ _project_global_script_set_up_backups() {
     return 1
   fi
 
-  if ! ssh "${ssh_user}@${ssh_host}" -p "$ssh_port" "ls -l" 2> /dev/null; then
-    # Allow ssh connections to the storage box.
+  # Allow ssh connections to the storage box.
+  if ! ssh "${ssh_user}@${ssh_host}" -oBatchMode=yes -p "$ssh_port" "exit" 2> /dev/null; then
+    echo "Trying to add public key \"${TEXT_YELLOW}${public_key_file}${TEXT_RESET}\" to authorized_keys on \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\"."
     # We're doing it this way to not have the ssh password be written to bash history.
     (
       # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
       cat "$public_key_file" | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
     )
     project_show_success "Set up ssh connection + public key authentication to \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\"."
+  else
+    project_show_success "Ssh connection \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\" is already working."
   fi
 
+  # Make sure the backup_target_path exists, so borg can initialize a repository.
+  (
+    SSHPASS="$ssh_password" sshpass -e ssh "$ssh_user@$ssh_host" -p "$ssh_port" mkdir -p "$backup_target_path"
+  )
 
   local repository_url
   repository_url=$(project_get_borg_repository "$ssh_host" "$ssh_port" "$ssh_user" "$backup_target_path")
