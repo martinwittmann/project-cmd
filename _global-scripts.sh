@@ -637,6 +637,6 @@ _project_global_script_restore_project_from_backup() {
 
   (
     BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name")
-    borg create "${borg_arguments[@]}"
+    borg extract --list --dry-run "${borg_arguments[@]}"
   )
 }
