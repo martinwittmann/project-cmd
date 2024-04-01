@@ -136,13 +136,18 @@ _project_global_script_import_mysql_dump() {
 _project_global_script_list_mysql_dumps() {
   local dumps_path
   dumps_path="$(realpath "$PROJECT_PATH/.project/dumps")"
-  ls -lh "$dumps_path" | tail -n +2 | while read -r line; do
-    # Extract file name
-    file=$(echo "$line" | awk '{print $9 " (" $5 ")"}')
+  readarray -t file_names < <(ls -lh "$dumps_path" | tail -n +2 | sort -r | awk '{print $9}')
+  readarray -t file_sizes < <(ls -lh "$dumps_path" | tail -n +2 | sort -r | awk '{print $5}')
 
-    # Print formatted output
-    echo "$file"
-done
+  local max_length
+  max_length=$(_project_get_max_length_of_list "${file_names[@]}")
+
+  for index in "${!file_names[@]}"; do
+    local name="${file_names[index]}"
+    local size="${file_sizes[index]}"
+    local padding_length=$(($max_length - ${#name}))
+    printf "%s%*s (%s)\n" "$name" $padding_length "" "$size"
+  done
 }
 
 _project_global_script_composer() {
@@ -207,7 +212,7 @@ _project_global_script_vite() {
     npm run start
 }
 
-_project_global_script_rebuild_containers() {
+_project_global_script_docker_containers_rebuild() {
   if project_uses_docker; then
     local container_name="$1"
     local compose_file
@@ -501,20 +506,115 @@ _project_global_script_set_up_backups() {
     return 1
   fi
 
-  # Allow ssh connections to the storage box.
-  # We're doing it this way to not have the ssh password be written to bash history.
+  if ! ssh "${ssh_user}@${ssh_host}" -p "$ssh_port" "ls -l" 2> /dev/null; then
+    # Allow ssh connections to the storage box.
+    # We're doing it this way to not have the ssh password be written to bash history.
+    (
+      # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
+      cat "$public_key_file" | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
+    )
+    project_show_success "Set up ssh connection + public key authentication to \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\"."
+  fi
+
+
+  local repository_url
+  repository_url=$(project_get_borg_repository "$ssh_host" "$ssh_port" "$ssh_user" "$backup_target_path")
+
+  # Initialize borg repository if it does not exist.
+  # Note that we assume that the ssh session drops the user into the correct directory ($backup_target_path) on the server.
+  if ! ssh "${ssh_user}@${ssh_host}" -p "$ssh_port" "cat config" 2> /dev/null; then
+    (
+      BORG_PASSPHRASE="$passphrase"
+      borg init --encryption=repokey "${repository_url}"
+    )
+  else
+    project_show_warning "Borg backup repository is already set up."
+  fi
+}
+
+# By default all files in the project path will be backed up.
+# To include or exclude paths from backing up, create the file
+# .project/backup.patterns and add inclusion/exclusion patterns.
+# See --patterns-from option in https://borgbackup.readthedocs.io/en/stable/usage/create.html
+# See https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns
+
+# To dynamically / programmatically include or exclude files additionally
+# to the ones defined in .project/backup.patterns append arguments to the
+# _project_global_script_create_backup_for_project below.
+# Each argument after project name will be added to borg create as
+# --pattern=$argument.
+# Example to include a database dump and exclude a cache directory.
+# _project_global_script_create_backup_for_project "$PROJECT_NAME" \
+#  "+.project/dumps/YYYY-mm-dd--HH-MM-SS.sql" \
+#  "-build/cache-*" \
+_project_global_script_create_backup_for_project() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  local project_path=""
+  shift
+  # We consider all arguments after the project name to be include/exclude
+  # patterns which will be added before --patterns-from.
+  local extra_patterns=("$@")
+
+  if [ -z "$project_name" ] || ! project_path=$(_project_get_project_path_by_name "$project_name"); then
+    project_show_error "Could not find project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
+    project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  local backup_patterns_file="$project_path/.project/backup.patterns"
+  archive_name="$(date +%F--%H-%M-%S)"
+
+  local borg_arguments=()
+  for pattern in "${extra_patterns[@]}"; do
+    borg_arguments+=(--pattern="$pattern")
+  done
+
+  if [ -f "$backup_patterns_file" ]; then
+    borg_arguments+=("--patterns-from" "$backup_patterns_file")
+  fi
+
   (
-    # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
-    cat ${HOME}/.ssh/id_rsa.pub | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name")
+    borg create "${repository}::${archive_name}" "${borg_arguments[@]}"
   )
-  project_show_success "Set up ssh connection + public key authentication to \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\"."
+}
 
-  local ssh_url="ssh://${ssh_host}:${ssh_port}/./${backup_target_path}"
+_project_global_script_restore_project_from_backup() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  local project_path=""
+  shift
+  # We consider all arguments after the project name to be include/exclude
+  # patterns which will be added before --patterns-from.
+  local extra_patterns=("$@")
 
-  ssh "${ssh_user}@${ssh_host}" -p "$ssh_port" "[ -f '$backup_target_path/config' ] && echo '1' || echo '0'"
+  if [ -z "$project_name" ] || ! project_path=$(_project_get_project_path_by_name "$project_name"); then
+    project_show_error "Could not find project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
+    project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  local backup_patterns_file="$project_path/.project/backup.patterns"
+  archive_name="$(date +%F--%H-%M-%S)"
+
+  local borg_arguments=()
+  for pattern in "${extra_patterns[@]}"; do
+    borg_arguments+=(--pattern="$pattern")
+  done
+
+  if [ -f "$backup_patterns_file" ]; then
+    borg_arguments+=("--patterns-from" "$backup_patterns_file")
+  fi
 
   (
-    BORG_PASSPHRASE="$passphrase"
-    borg init --encryption=repokey ${ssh_url}/./${backup_target_path}
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name")
+    borg create "${repository}::${archive_name}" "${borg_arguments[@]}"
   )
 }

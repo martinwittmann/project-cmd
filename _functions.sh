@@ -167,7 +167,8 @@ _project_get_project_status() {
   local project_name="$1"
   local project_path="$2"
   local name_padding=$((10 - ${#project_name}))
-  local script_filename="$(_project_get_script_path "$project_path" "status")"
+  local script_filename
+  script_filename="$(_project_get_script_path "$project_path" "status")"
   local project_status
 
   if [ -f "$script_filename" ]; then
@@ -272,10 +273,16 @@ project_create_from_template() {
 project_get_docker_compose_path() {
   local project_name="${1:-$PROJECT_NAME}"
   local project_path
-  project_path="$(_project_get_project_path_by_name "$project_name")"
   local project_env
-  project_env="$(_project_get_env_value "$project_name" "PROJECT_ENV")"
-  echo "${project_path}/docker-compose.${project_env}.yml"
+
+  if [ "$project_name" == "$PROJECT_NAME" ]; then
+    project_path="$PROJECT_PATH"
+    project_env="$PROJECT_ENV"
+  else
+    project_path="$(_project_get_project_path_by_name "$project_name")"
+    project_env="$(_project_get_env_value "$project_name" "PROJECT_ENV")"
+  fi
+  echo "${project_path}/.project/docker/docker-compose.${project_env}.yml"
 }
 
 project_uses_docker() {
@@ -427,7 +434,7 @@ project_is_production() {
   fi
 }
 
-project_build_docker_images() {
+project_docker_images_build() {
   local dirnames="$1"
   local basepath="$2"
   local env="${3:-prod}"
@@ -770,4 +777,90 @@ project_set_env_file_variable() {
       sed -i "s/^${variable_name}.*/${variable_name}=\"$value\"/" "$env_file"
     fi
   fi
+}
+
+project_get_borg_repository() {
+  local ssh_host="$1"
+  local ssh_port="$2"
+  local ssh_user="$3"
+  local backup_target_path="$4"
+  echo "ssh://${ssh_user}@${ssh_host}:${ssh_port}/./${backup_target_path}"
+}
+
+project_create_borg_backup() {
+  local patterns_file="${1:-.project/backup.patterns}"
+  local repository="$2"
+  local source_dir="$3"
+  local passphrase="$4"
+  local archive_name="${5:-$(date +%F--%H-%M-%S)}"
+  local dry_run="${6:-0}"
+
+  local borg_arguments=("--patterns-from" "$patterns_file")
+  if [ "$dry_run" != "0" ]; then
+    borg_arguments+=("--list" "--dry-run")
+  fi
+  # We need to use ./ for source since we cd into $source to make relative paths work.
+  borg_arguments+=("$repository::$archive_name" "./")
+
+  (
+    # To resolve $patterns_file correctly if using a relative path.
+    cd "$source_dir"
+    BORG_PASSPHRASE="$passphrase" borg create "${borg_arguments[@]}"
+  )
+}
+
+project_get_last_borg_backup() {
+  local repository="$1"
+  local passphrase="$2"
+
+  local last_archive
+  last_archive=$(BORG_PASSPHRASE="$passphrase" borg list "${repository} --short")
+  # Strip :: from the archive name.
+  echo "${last_archive/:://}"
+}
+
+_project_get_borg_backup_repository() {
+  local project_name="$1"
+
+  local ssh_host
+  local ssh_port
+  local ssh_user
+  local ssh_password
+  local backup_target_path
+
+  if [ "$project_name" == "$PROJECT_NAME" ]; then
+    ssh_host="$PROJECT_BACKUP_SSH_HOST"
+    ssh_port="${PROJECT_BACKUP_SSH_PORT:-22}"
+    ssh_user="$PROJECT_BACKUP_SSH_USER"
+    ssh_password="$PROJECT_BACKUP_SSH_PASSWORD"
+    backup_target_path="$PROJECT_BACKUP_TARGET_PATH"
+  else
+    ssh_host=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_HOST)
+    ssh_port=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PORT "" "22")
+    ssh_user=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_USER)
+    ssh_password=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PASSWORD)
+    backup_target_path=$(_project_get_env_value "$project_name" PROJECT_BACKUP_TARGET_PATH)
+  fi
+
+  echo "$repository"
+}
+
+_project_get_borg_backup_passphrase() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  if [ "$project_name" == "$PROJECT_NAME" ]; then
+    echo "$PROJECT_BORG_BACKUP_PASSPHRASE"
+  else
+    _project_get_env_value "$project_name" PROJECT_BORG_BACKUP_PASSPHRASE
+  fi
+}
+
+_project_get_max_length_of_list() {
+  local strings=("$@")
+  local max_length=0
+  for string in "${strings[@]}"; do
+    if (( ${#string} > max_length )); then
+      max_length=${#string}
+    fi
+  done
+  echo $max_length
 }

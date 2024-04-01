@@ -31,16 +31,16 @@ Create a .env file:
   PROJECT_PATH_IN_CONTAINER=/app
   ```
 
-Create a docker-compose.dev.yml if you want to use docker:
+Create a .project/docker/docker-compose.dev.yml if you want to use docker:
   ```
   services:
     app:
       container_name: ${PROJECT_CONTAINER_NAME}
       build:
-        context: ./.project/docker/app
+        context: ../app
         # Of course you can use your custom directory structure.
       volumes:
-        - ./:${PROJECT_PATH_IN_CONTAINER}
+        - ../../:${PROJECT_PATH_IN_CONTAINER}
       restart: always
       user: www-data
       extra_hosts:
@@ -53,7 +53,7 @@ Create a docker-compose.dev.yml if you want to use docker:
 Create a .project/scripts directory and add scripts you need:
   E.g.: .project/scripts/start.sh:
   ```
-  # If you're using docker then this will run docker compose with docker-compose.[PROJECT_ENV].yml
+  # If you're using docker then this will run docker compose with .project/docker/docker-compose.[PROJECT_ENV].yml
   project_run_global_script start
 
   # TODO Add / modify to according to your needs.
@@ -131,8 +131,9 @@ to start a diff viewer. Depending on availability, meld, vimdiff, diff is being 
 │   ├── docker
 │   │   ├── app
 │   │   │   └── Dockerfile
-│   │   └── db
-│   │       └── Dockerfile
+│   │   ├── db
+│   │   │   └── Dockerfile
+│   │   └── docker-compose.dev.yml
 │   └── scripts
 │       ├── build_theme.sh
 │       ├── restart.sh
@@ -143,8 +144,7 @@ to start a diff viewer. Depending on availability, meld, vimdiff, diff is being 
 ├── src
 │   ├── ...
 │   └── ...
-├── .env
-└── docker-compose.dev.yml
+└── .env
 ```
 
 
