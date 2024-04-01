@@ -22,8 +22,17 @@ _project_global_script_start() {
     local compose_file
     compose_file="$(project_get_docker_compose_path)"
 
+  	declare -a env_files=()
+  	_project_get_env_files "$PROJECT_NAME" "$PROJECT_TAG" env_files
+
+		local compose_arguments=()
+		for env_file in "${env_files[@]}"; do
+			compose_arguments+=("--env-file" "$env_file")
+		done
+		compose_arguments+=("-f" "$compose_file")
+
     # We always daemonize and remove orphans to not accumulate old containers.
-    docker compose -f "$compose_file" up -d --remove-orphans
+    docker compose "${compose_arguments[@]}" up -d --remove-orphans
   else
     project_show_error "I don\'t know how to start project \"${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET}\" since it is not configured to use docker and no start script is specified."
     return 1
@@ -33,8 +42,18 @@ _project_global_script_start() {
 _project_global_script_stop() {
   if project_uses_docker; then
     local compose_file
-    compose_file="$(project_get_docker_compose_path)"
-    docker compose -f "$compose_file" down
+    compose_file=$(project_get_docker_compose_path)
+
+  	declare -a env_files=()
+  	_project_get_env_files "$PROJECT_NAME" "$PROJECT_TAG" env_files
+
+		local compose_arguments=()
+		for env_file in "${env_files[@]}"; do
+			compose_arguments+=("--env-file" "$env_file")
+		done
+		compose_arguments+=("-f" "$compose_file")
+
+    docker compose "${compose_arguments[@]}" down
   else
     project_show_error "I don\'t know how to stop this project since it is not configured to use docker."
     return 1
