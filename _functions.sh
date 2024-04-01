@@ -779,14 +779,6 @@ project_set_env_file_variable() {
   fi
 }
 
-project_get_borg_repository() {
-  local ssh_host="$1"
-  local ssh_port="$2"
-  local ssh_user="$3"
-  local backup_target_path="$4"
-  echo "ssh://${ssh_user}@${ssh_host}:${ssh_port}/./${backup_target_path}"
-}
-
 project_create_borg_backup() {
   local patterns_file="${1:-.project/backup.patterns}"
   local repository="$2"
@@ -842,7 +834,7 @@ _project_get_borg_backup_repository() {
     backup_target_path=$(_project_get_env_value "$project_name" PROJECT_BACKUP_TARGET_PATH)
   fi
 
-  echo "$repository"
+  echo "ssh://${ssh_user}@${ssh_host}:${ssh_port}/./${backup_target_path}"
 }
 
 _project_get_borg_backup_passphrase() {

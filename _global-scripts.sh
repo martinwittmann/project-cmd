@@ -525,15 +525,16 @@ _project_global_script_set_up_backups() {
   )
 
   local repository_url
-  repository_url=$(project_get_borg_repository "$ssh_host" "$ssh_port" "$ssh_user" "$backup_target_path")
+  repository_url=$(_project_get_borg_backup_repository "$ssh_host" "$ssh_port" "$ssh_user" "$backup_target_path")
 
   # Initialize borg repository if it does not exist.
   # Note that we assume that the ssh session drops the user into the correct directory ($backup_target_path) on the server.
   if ! ssh "${ssh_user}@${ssh_host}" -p "$ssh_port" "cat config" 2> /dev/null; then
+    echo "Setting up repository."
     (
-      BORG_PASSPHRASE="$passphrase"
-      borg init --encryption=repokey "${repository_url}"
+      BORG_PASSPHRASE="$passphrase" borg init --encryption=repokey "${repository_url}"
     )
+    echo "done."
   else
     project_show_warning "Borg backup repository is already set up."
   fi
@@ -567,6 +568,11 @@ _project_global_script_create_backup_for_project() {
     return 1
   fi
 
+  if [ ! -d "$project_path" ]; then
+    project_show_error "Cannot create backup for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" since the project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" does not exist."
+    return 1
+  fi 
+
   if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
     project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
     return 1
@@ -584,9 +590,11 @@ _project_global_script_create_backup_for_project() {
     borg_arguments+=("--patterns-from" "$backup_patterns_file")
   fi
 
+  borg_arguments+=("${repository}::${archive_name}" "$project_path")
+
   (
     BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name")
-    borg create "${repository}::${archive_name}" "${borg_arguments[@]}"
+    borg create "${borg_arguments[@]}" 
   )
 }
 
@@ -603,6 +611,11 @@ _project_global_script_restore_project_from_backup() {
     return 1
   fi
 
+  if [ ! -d "$project_path" ]; then
+    project_show_error "Cannot create backup for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" since the project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" does not exist."
+    return 1
+  fi 
+
   if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
     project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
     return 1
@@ -622,6 +635,6 @@ _project_global_script_restore_project_from_backup() {
 
   (
     BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name")
-    borg create "${repository}::${archive_name}" "${borg_arguments[@]}"
+    borg create "${repository}::${archive_name}" "${borg_arguments[@]}" "$project_path"
   )
 }
