@@ -167,8 +167,7 @@ _project_get_project_status() {
   local project_name="$1"
   local project_path="$2"
   local name_padding=$((10 - ${#project_name}))
-  local script_filename
-  script_filename="$(_project_get_script_path "$project_path" "status")"
+  local script_filename="$(_project_get_script_path "$project_path" "status")"
   local project_status
 
   if [ -f "$script_filename" ]; then
