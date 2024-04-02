@@ -608,6 +608,7 @@ _project_global_script_create_backup_for_project() {
 
 _project_global_script_restore_project_from_backup() {
   local project_name="${1:-${PROJECT_NAME}}"
+  local archive_name="$2"
   local project_path=""
   shift
   # We consider all arguments after the project name to be include/exclude
@@ -629,14 +630,16 @@ _project_global_script_restore_project_from_backup() {
     return 1
   fi
 
-  local backup_patterns_file="$project_path/.project/backup.patterns"
-  archive_name="$(date +%F--%H-%M-%S)"
+  if [ -z "$archive_name" ]; then
+    archive_name=$(_project_get_last_borg_backup_archive "$project_name")
+  fi
 
   local borg_arguments=()
   for pattern in "${extra_patterns[@]}"; do
     borg_arguments+=(--pattern="$pattern")
   done
 
+  local backup_patterns_file="$project_path/.project/backup_restore.patterns"
   if [ -f "$backup_patterns_file" ]; then
     borg_arguments+=("--patterns-from" "$backup_patterns_file")
   fi
@@ -670,4 +673,9 @@ _project_global_script_list_backups_for_project() {
   (
     BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg list "${repository}" "$project_path"
   )
+}
+
+_project_get_last_borg_backup_archive() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  _project_global_script_list_backups_for_project "$project_name" | head -n 1 | awk '{print $1}'
 }
