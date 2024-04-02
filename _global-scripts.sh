@@ -678,6 +678,11 @@ _project_global_script_restore_project_from_backup() {
   borg_arguments+=("${repository}::${archive_name}")
 
   echo -e "Restoring data from backup archive \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\"..."
+
+  echo "pp:"
+  _project_get_borg_backup_passphrase "$project_name"
+  echo borg extract --list "${borg_arguments[@]}"
+  return 1
   (
     cd "$project_path"
     BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg extract --list "${borg_arguments[@]}"
