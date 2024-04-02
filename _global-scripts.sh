@@ -25,7 +25,7 @@ _project_global_script_start() {
   	declare -a env_files=()
   	_project_get_env_files "$PROJECT_NAME" "$PROJECT_TAG" env_files
 
-		local compose_arguments=()
+		local compose_arguments=("--project-name" "$PROJECT_NAME")
 		for env_file in "${env_files[@]}"; do
 			compose_arguments+=("--env-file" "$env_file")
 		done
@@ -47,7 +47,7 @@ _project_global_script_stop() {
   	declare -a env_files=()
   	_project_get_env_files "$PROJECT_NAME" "$PROJECT_TAG" env_files
 
-		local compose_arguments=()
+		local compose_arguments=("--project-name" "$PROJECT_NAME")
 		for env_file in "${env_files[@]}"; do
 			compose_arguments+=("--env-file" "$env_file")
 		done
@@ -58,11 +58,6 @@ _project_global_script_stop() {
     project_show_error "I don\'t know how to stop this project since it is not configured to use docker."
     return 1
   fi
-}
-
-_project_global_script_restart() {
-  _project_global_script_stop
-  _project_global_script_start
 }
 
 _project_global_script_root() {
@@ -233,15 +228,10 @@ _project_global_script_vite() {
 
 _project_global_script_docker_containers_rebuild() {
   if project_uses_docker; then
-    local container_name="$1"
+    local container_name="${1:-app}"
     local compose_file
     compose_file="$(project_get_docker_compose_path)"
-
-    if [ -z "$container_name" ]; then
-      docker compose -f "$compose_file" build app
-    else
-      docker compose -f "$compose_file" build "$container_name"
-    fi
+    docker compose --project-name "$PROJECT_NAME" -f "$compose_file" build "$container_name"
   else
     project_show_error "This environment is configured not to use docker!"
     return 1

@@ -144,9 +144,6 @@ _project_run_script() {
   source "$global_scripts"
 
   if [ -f "$script_filename" ]; then
-    # We need to source the script file to make all our variables and commands /
-    # functions available to the script.
-
     if [ "$project_name" == "$PROJECT_NAME" ]; then
       source "$script_filename"
     else
@@ -303,7 +300,7 @@ _project_get_project_status_via_docker_compose() {
   local compose_file
   compose_file="$(project_get_docker_compose_path)"
   local status
-  status="$(docker compose -f "$compose_file" ps --format '{{.Name}} {{.Status}}')"
+  status="$(docker compose --project-name "$project_name" -f "$compose_file" ps --format '{{.Name}} {{.Status}}')"
 
   local project_status="down"
   local all_services_up=true
