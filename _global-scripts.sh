@@ -717,5 +717,5 @@ _project_global_script_list_backups_for_project() {
 
 _project_get_last_borg_backup_archive() {
   local project_name="${1:-${PROJECT_NAME}}"
-  _project_global_script_list_backups_for_project "$project_name" | head -n 1 | awk '{print $1}'
+  _project_global_script_list_backups_for_project "$project_name" | sort -r | head -n 1 | awk '{print $1}'
 }
