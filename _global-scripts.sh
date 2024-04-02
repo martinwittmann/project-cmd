@@ -602,8 +602,7 @@ _project_global_script_create_backup_for_project() {
   borg_arguments+=("${repository}::${archive_name}" "$project_path")
 
   (
-    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name")
-    borg create "${borg_arguments[@]}"
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg create "${borg_arguments[@]}"
   )
 }
 
@@ -645,7 +644,30 @@ _project_global_script_restore_project_from_backup() {
   borg_arguments+=("${repository}::${archive_name}" "$project_path")
 
   (
-    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name")
-    borg extract --list --dry-run "${borg_arguments[@]}"
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg extract --list --dry-run "${borg_arguments[@]}"
+  )
+}
+
+_project_global_script_list_backups_for_project() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  local project_path=""
+
+  if [ -z "$project_name" ] || ! project_path=$(_project_get_project_path_by_name "$project_name"); then
+    project_show_error "Could not find project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  if [ ! -d "$project_path" ]; then
+    project_show_error "Cannot create backup for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" since the project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" does not exist."
+    return 1
+  fi
+
+  if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
+    project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  (
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg list "${repository}" "$project_path"
   )
 }
