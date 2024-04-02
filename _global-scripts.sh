@@ -382,7 +382,7 @@ _project_global_script_create_nginx_config_for_project() {
   fi
 
   if ! _project_get_project_path_by_name "$project_name" > /dev/null; then
-    project_show_error "Project \"${PROJEXT_TEXT_YELLOW}${project_name}${PROJEXT_TEXT_RESET}\" Does not exist."
+    project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" Does not exist."
     return 1
   fi
 
@@ -526,7 +526,7 @@ _project_global_script_set_up_backups() {
   elif [ -f "$HOME/.ssh/id_dsa.pub" ]; then
     public_key_file="$HOME/.ssh/id_dsa.pub"
   else
-    project_show_error "Could not detect a public key file in \"${PROJEXT_TEXT_YELLOW}${HOME}${PROJEXT_TEXT_RESET}\"."
+    project_show_error "Could not detect a public key file in \"${TEXT_YELLOW}${HOME}${TEXT_RESET}\"."
     return 1
   fi
 
@@ -538,9 +538,9 @@ _project_global_script_set_up_backups() {
       # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
       cat "$public_key_file" | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
     )
-    project_show_success "Set up ssh connection + public key authentication to \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\"."
+    project_show_success "Set up ssh connection + public key authentication to \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\"."
   else
-    project_show_success "Ssh connection \"${PROJEXT_TEXT_YELLOW}${ssh_host}${PROJEXT_TEXT_RESET}\" is already working."
+    project_show_success "Ssh connection \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\" is already working."
   fi
 
   # Make sure the backup_target_path exists, so borg can initialize a repository.
@@ -553,9 +553,9 @@ _project_global_script_set_up_backups() {
 
   # Initialize borg repository if it does not exist.
   # Note that we assume that the ssh session drops the user into the correct directory ($backup_target_path) on the server.
-  echo -e "Setting up repository \"${TEXT_YELLOW}${repository_url}${PROJEXT_TEXT_RESET}\"."
+  echo -e "Setting up repository \"${TEXT_YELLOW}${repository_url}${TEXT_RESET}\"."
   (
-    BORG_PASSPHRASE="$passphrase" borg init --encryption=repokey "${repository_url}"
+    BORG_PASSPHRASE="$borg_passphrase" borg init --encryption=repokey "${repository_url}"
   )
   if [ $? -eq 0 ]; then
     project_show_success "Backup repository set up."
@@ -679,10 +679,6 @@ _project_global_script_restore_project_from_backup() {
 
   echo -e "Restoring data from backup archive \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\"..."
 
-  echo "pp:"
-  _project_get_borg_backup_passphrase "$project_name"
-  echo borg extract --list "${borg_arguments[@]}"
-  return 1
   (
     cd "$project_path"
     BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg extract --list "${borg_arguments[@]}"
