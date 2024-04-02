@@ -681,7 +681,7 @@ _project_global_script_restore_project_from_backup() {
 
   (
     cd "$project_path"
-    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg extract --list "${borg_arguments[@]}"
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg extract "${borg_arguments[@]}"
   )
 
   if [ $? -eq 0 ]; then
