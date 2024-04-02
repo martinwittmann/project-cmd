@@ -553,14 +553,12 @@ _project_global_script_set_up_backups() {
 
   # Initialize borg repository if it does not exist.
   # Note that we assume that the ssh session drops the user into the correct directory ($backup_target_path) on the server.
-  if ! ssh "${ssh_user}@${ssh_host}" -p "$ssh_port" "cat config" 2> /dev/null; then
-    echo "Setting up repository \"${TEXT_YELLOW}${repository_url}${PROJEXT_TEXT_RESET}\"."
-    (
-      BORG_PASSPHRASE="$passphrase" borg init --encryption=repokey "${repository_url}"
-    )
-    echo "done."
-  else
-    project_show_warning "Borg backup repository is already set up."
+  echo -e "Setting up repository \"${TEXT_YELLOW}${repository_url}${PROJEXT_TEXT_RESET}\"."
+  (
+    BORG_PASSPHRASE="$passphrase" borg init --encryption=repokey "${repository_url}"
+  )
+  if [ $? -eq 0 ]; then
+    project_show_success "Backup repository set up."
   fi
 }
 
