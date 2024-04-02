@@ -572,7 +572,7 @@ _project_global_script_set_up_backups() {
 # to the ones defined in .project/backup.patterns append arguments to the
 # _project_global_script_create_backup_for_project below.
 # Each argument after project name will be added to borg create as
-# --pattern=$argument.
+# --pattern $argument.
 # Example to include a database dump and exclude a cache directory.
 # _project_global_script_create_backup_for_project "$PROJECT_NAME" \
 #  "+.project/dumps/YYYY-mm-dd--HH-MM-SS.sql" \
@@ -605,7 +605,7 @@ _project_global_script_create_backup_for_project() {
 
   local borg_arguments=()
   for pattern in "${extra_patterns[@]}"; do
-    borg_arguments+=(--pattern="$pattern")
+    borg_arguments+=(--pattern "$pattern")
   done
 
   if [ -f "$backup_patterns_file" ]; then
@@ -625,7 +625,7 @@ _project_global_script_restore_project_from_backup() {
   local archive_name="$2"
   local dont_ask="$3"
   local project_path=""
-  shift
+  shift 3
   # We consider all arguments after the project name to be include/exclude
   # patterns which will be added before --patterns-from.
   local extra_patterns=("$@")
@@ -666,7 +666,7 @@ _project_global_script_restore_project_from_backup() {
   fi
 
   for pattern in "${extra_patterns[@]}"; do
-    borg_arguments+=(--pattern="$pattern")
+    borg_arguments+=(--pattern "$pattern")
   done
 
   local backup_patterns_file="$project_path/.project/backup_restore.patterns"
