@@ -599,9 +599,10 @@ _project_global_script_create_backup_for_project() {
     borg_arguments+=("--patterns-from" "$backup_patterns_file")
   fi
 
-  borg_arguments+=("${repository}::${archive_name}" "$project_path")
+  borg_arguments+=("${repository}::${archive_name}" ".")
 
   (
+    cd "$project_path"
     BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg create "${borg_arguments[@]}"
   )
 }
@@ -609,6 +610,7 @@ _project_global_script_create_backup_for_project() {
 _project_global_script_restore_project_from_backup() {
   local project_name="${1:-${PROJECT_NAME}}"
   local archive_name="$2"
+  local dont_ask="$3"
   local project_path=""
   shift
   # We consider all arguments after the project name to be include/exclude
@@ -635,6 +637,21 @@ _project_global_script_restore_project_from_backup() {
   fi
 
   local borg_arguments=()
+  if [ -z "$dont_ask" ]; then
+    read -p "$(echo -e "${p["_status_danger"]} Do you really want to restore \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" to the archived state from \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\"? (y/N): ")" answer
+
+    case "$answer" in
+      [yY][eE][sS]|[yY]) 
+      do_restore=true
+      ;;
+      *) 
+        project_show_warning "Aborted."
+        return 1
+      ;;
+    esac
+	
+  fi
+
   for pattern in "${extra_patterns[@]}"; do
     borg_arguments+=(--pattern="$pattern")
   done
@@ -643,12 +660,21 @@ _project_global_script_restore_project_from_backup() {
   if [ -f "$backup_patterns_file" ]; then
     borg_arguments+=("--patterns-from" "$backup_patterns_file")
   fi
+  echo "restore patterns: $backup_patterns_file"
 
-  borg_arguments+=("${repository}::${archive_name}" "$project_path")
+  borg_arguments+=("${repository}::${archive_name}")
 
+  echo -e "Restoring data from backup archive \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\"..."
   (
-    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg extract --list --dry-run "${borg_arguments[@]}"
+    cd "$project_path"
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg extract --list "${borg_arguments[@]}"
   )
+
+  if [ $? -eq 0 ]; then
+    project_show_success "Restore complete."
+  else
+    project_show_error "Please check what went wrong during restoring."
+  fi
 }
 
 _project_global_script_list_backups_for_project() {
