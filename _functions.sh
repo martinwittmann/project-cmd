@@ -753,7 +753,8 @@ project_set_env_file_variable() {
   local env_file="$1"
   local variable_name="$2"
   local value="$3"
-  local overwrite="${4:-0}"
+  local overwrite="$4"
+  local create_variable="$5"
 
   env_file=$(realpath "$env_file")
   if [ ! -f "$env_file" ]; then
@@ -764,11 +765,12 @@ project_set_env_file_variable() {
   current_value=$(_project_get_env_value_from_file "$env_file"  "$variable_name")
 
   if [ -z "$current_value" ]; then
-    echo "${variable_name}=\"${value}\"" >> "$env_file"
+    if [ -n "$create_variable" ]; then
+      echo "${variable_name}=\"${value}\"" >> "$env_file"
+    fi
   else
-    if [ "$overwrite" == "0" ]; then
+    if [ -z "$overwrite" ]; then
       project_show_warning "The variable \"${TEXT_YELLOW}${variable_name}${TEXT_RESET}\" already exists in file \"${TEXT_YELLOW}${env_file}${TEXT_RESET}\"."
-      return 1
     else
       sed -i "s/^${variable_name}.*/${variable_name}=\"$value\"/" "$env_file"
     fi
@@ -836,9 +838,9 @@ _project_get_borg_backup_repository() {
 _project_get_borg_backup_passphrase() {
   local project_name="${1:-${PROJECT_NAME}}"
   if [ "$project_name" == "$PROJECT_NAME" ]; then
-    echo "$PROJECT_BORG_BACKUP_PASSPHRASE"
+    echo "$PROJECT_BACKUP_PASSPHRASE"
   else
-    _project_get_env_value "$project_name" PROJECT_BORG_BACKUP_PASSPHRASE
+    _project_get_env_value "$project_name" PROJECT_BACKUP_PASSPHRASE
   fi
 }
 

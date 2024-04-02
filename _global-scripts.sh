@@ -463,13 +463,26 @@ _project_global_script_create_passphrase() {
 }
 
 _project_global_script_create_backup_passphrase() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  local project_tag="${2:-${PROJECT_TAG}}"
+  local overwrite="$3"
+
   local passphrase
   passphrase=$(project_run_global_script create_passphrase)
 
   declare -a env_files=()
-  _project_get_env_files "$PROJECT_NAME" "$PROJECT_TAG" env_files
-  local env_file="${env_files[0]}"
-  project_set_env_file_variable "$env_file" "PROJECT_BORG_BACKUP_PASSPHRASE" "$passphrase"
+  _project_get_env_files "$project_name" "$project_tag" env_files
+
+  local current_passphrase
+  for env_file in "${env_files[@]}"; do
+    current_passphrase=$(_project_get_env_value "$project_name" PROJECT_BACKUP_PASSPHRASE)
+
+    if [ -z "$current_passphrase" ] || [ -n "$overwrite" ]; then
+      # We use the given overwrite value, but never add the variable if it does not exist.
+      # Env files should contain all necessary variables, even if values are empty.
+      project_set_env_file_variable "$env_file" "PROJECT_BACKUP_PASSPHRASE" "$passphrase" "$overwrite" ""
+    fi
+  done
 }
 
 _project_global_script_set_up_backups() {
@@ -480,7 +493,9 @@ _project_global_script_set_up_backups() {
     project_show_error "Only borg backup via ssh is supported at the moment."
     return 1
   fi
-  #project_run_global_script create_backup_passphrase
+
+  # Make sure a passphrase is set.
+  project_run_global_script create_backup_passphrase
 
   local ssh_host
   local ssh_port
@@ -494,14 +509,14 @@ _project_global_script_set_up_backups() {
     ssh_port="${PROJECT_BACKUP_SSH_PORT:-22}"
     ssh_user="$PROJECT_BACKUP_SSH_USER"
     ssh_password="$PROJECT_BACKUP_SSH_PASSWORD"
-    borg_passphrase="$PROJECT_BORG_BACKUP_PASSPHRASE"
+    borg_passphrase="$PROJECT_BACKUP_PASSPHRASE"
     backup_target_path="$PROJECT_BACKUP_TARGET_PATH"
   else
     ssh_host=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_HOST)
     ssh_port=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PORT "" "22")
     ssh_user=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_USER)
     ssh_password=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PASSWORD)
-    borg_passphrase=$(_project_get_env_value "$project_name" PROJECT_BORG_BACKUP_PASSPHRASE)
+    borg_passphrase=$(_project_get_env_value "$project_name" PROJECT_BACKUP_PASSPHRASE)
     backup_target_path=$(_project_get_env_value "$project_name" PROJECT_BACKUP_TARGET_PATH)
   fi
 
@@ -623,7 +638,7 @@ _project_global_script_restore_project_from_backup() {
   fi
 
   if [ ! -d "$project_path" ]; then
-    project_show_error "Cannot create backup for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" since the project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" does not exist."
+    project_show_error "Cannot restore \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" from backup since the project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" does not exist."
     return 1
   fi
 
