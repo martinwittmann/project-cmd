@@ -534,7 +534,7 @@ _project_global_script_set_up_backups() {
   if ! ssh "${ssh_user}@${ssh_host}" -oBatchMode=yes -p "$ssh_port" "exit" 2> /dev/null; then
     echo -e "Trying to add public key \"${TEXT_YELLOW}${public_key_file}${TEXT_RESET}\" to authorized_keys on \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\"."
     # We're doing it this way to not have the ssh password be written to bash history.
-    echo cat "$public_key_file" | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
+    echo SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
     return 0
     (
       # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
