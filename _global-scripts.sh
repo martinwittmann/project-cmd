@@ -756,22 +756,22 @@ _project_global_script_rotate_backups_for_project() {
   # policies as needed.
   keep_daily=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_DAILY)
   if [ -n "$keep_daily" ] && _project_is_int "$keep_daily"; then
-    keep_arguments+=("--keep_daily" "$keep_daily")
+    keep_arguments+=("--keep-daily" "$keep_daily")
   fi
 
   keep_weekly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_WEEKLY)
   if [ -n "$keep_weekly" ] && _project_is_int "$keep_weekly"; then
-    keep_arguments+=("--keep_weekly" "$keep_weekly")
+    keep_arguments+=("--keep-weekly" "$keep_weekly")
   fi
 
   keep_monthly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_MONTHLY)
   if [ -n "$keep_monthly" ] && _project_is_int "$keep_monthly"; then
-    keep_arguments+=("--keep_monthly" "$keep_monthly")
+    keep_arguments+=("--keep-monthly" "$keep_monthly")
   fi
 
   keep_yearly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_YEARLY)
   if [ -n "$keep_yearly" ] && _project_is_int "$keep_yearly"; then
-    keep_arguments+=("--keep_yearly" "$keep_yearly")
+    keep_arguments+=("--keep-yearly" "$keep_yearly")
   fi
 
   if [ ${#keep_arguments[@]} -eq 0 ]; then
