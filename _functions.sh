@@ -658,8 +658,14 @@ _project_get_env_value() {
 
   if [ -n "$value" ]; then
     echo "$value"
+    if [ -n "$debug" ]; then
+      project_show_debug "_project_get_env_value: retrieved value: $value"
+    fi
   else
     echo "$default_value"
+    if [ -n "$debug" ]; then
+      project_show_debug "_project_get_env_value: using default value: $default_value"
+    fi
   fi
 }
 
