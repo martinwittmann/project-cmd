@@ -201,6 +201,7 @@ project_add_project() {
     return 1
   fi
   local symlink="${p["projects_path"]}/$project_name"
+  echo ln -s "$project_path" "$symlink"
   sudo ln -s "$project_path" "$symlink"
 
   if [ "$quiet" == "0" ]; then

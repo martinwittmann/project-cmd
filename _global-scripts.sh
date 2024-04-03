@@ -342,6 +342,12 @@ _project_global_script_create_nginx_config() {
   # project tags.
   local project_domain
   project_domain="$(_project_get_env_value "$project_name" PROJECT_DOMAIN)"
+
+  if [ -z "$project_domain" ]; then
+    project_show_error "No project domain set!"
+    return 1
+  fi
+
   local path_in_proxy
   path_in_proxy="$(_project_get_env_value "$project_name" PROJECT_PATH_IN_PROXY_CONTAINER "" "/srv/${project_domain}")"
   path_in_container="$(_project_get_env_value "$project_name" PROJECT_PATH_IN_CONTAINER "" "/srv/app")"
