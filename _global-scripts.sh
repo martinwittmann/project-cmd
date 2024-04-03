@@ -775,7 +775,7 @@ _project_global_script_rotate_backups_for_project() {
   fi
 
   if [ ${#keep_arguments[@]} -eq 0 ]; then
-    project_show_error "No retention / pruning parameters set for this project.\nExiting to prevent losing backups."
+    project_show_error "No retention / pruning parameters set for this project.\n        Exiting to prevent losing backups."
     return 1
   fi
 
