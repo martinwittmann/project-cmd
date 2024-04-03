@@ -873,3 +873,11 @@ _project_get_max_length_of_list() {
   done
   echo $max_length
 }
+
+_project_is_int() {
+  if [[ $1 =~ ^-?[0-9]+$ ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
