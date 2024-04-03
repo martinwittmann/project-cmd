@@ -417,8 +417,7 @@ _project_global_script_create_nginx_config_for_project() {
     p["project_tag"]=""
   else
     # Update php env for the given tag or empty.
-    project_domain="$(_project_get_env_value "$project_name" PROJECT_DOMAIN "" "" "1")"
-    echo "project domain $project_domain, $PROJECT_DOMAIN"
+    project_domain="$(_project_get_env_value "$project_name" PROJECT_DOMAIN)"
     output_file="$proxy_project_path/$nginx_configs_dir/$project_domain.conf"
     project_run_global_script "create_nginx_config" "$template" "$output_file" "$allow_overwriting"
     project_run_global_script "create_nginx_log_files" "$project_name" "$project_path" "$project_domain"
