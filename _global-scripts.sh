@@ -423,8 +423,8 @@ _project_global_script_add_project_to_proxy() {
   proxy_project_path="$(_project_get_project_path_by_name "$proxy_project_name")"
   local path_in_proxy="${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${PROJECT_DOMAIN}}"
 
-  _project_run_script "$proxy_project_name" "$proxy_project_path" "volumes_add" "$PROJECT_PATH" "$path_in_proxy"
-  project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name"
+  _project_run_script "$proxy_project_name" "$proxy_project_path" "volumes_add" "$PROJECT_PATH" "$path_in_proxy" "1"
+  project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name" "1"
 
   _project_setup_project "$proxy_project_name"
   _project_run_script "$proxy_project_name" "$proxy_project_path" "docker_compose_update"
