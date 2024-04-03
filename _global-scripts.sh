@@ -656,6 +656,11 @@ _project_global_script_restore_project_from_backup() {
     archive_name=$(_project_get_last_borg_backup_archive "$project_name")
   fi
 
+  if [ -z "$archive_name" ]; then
+    project_show_error "No backup archive name was given and the repository does not contain any archives for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
   local borg_arguments=()
   if [ -z "$dont_ask" ]; then
     read -p "$(echo -e "${p["_status_danger"]} Do you really want to restore \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" to the archived state from \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\"? (y/N): ")" answer
