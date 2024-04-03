@@ -427,7 +427,7 @@ _project_global_script_add_project_to_proxy() {
   project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name"
 
   _project_setup_project "$proxy_project_name"
-  _project_run_script "$proxy_project_name" "$proxy_project_path" "docker_compose_update" "$PROJECT_PATH" "$path_in_proxy"
+  _project_run_script "$proxy_project_name" "$proxy_project_path" "docker_compose_update"
 }
 
 _project_global_script_create_nginx_log_files() {

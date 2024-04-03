@@ -182,14 +182,14 @@ _project_get_project_status() {
 
 project_add_project() {
   local project_name="$1"
-  local quiet="${2:-0}"
+  local project_path="$2"
+  local quiet="${3:-0}"
 
   if [ -z "$project_name" ]; then
     project_show_error "You need to provide a project name."
     return 1
   fi
 
-  local project_path="$2"
   if [ -z "$project_path" ]; then
     project_show_error "You need to provide a project path."
     return 1
