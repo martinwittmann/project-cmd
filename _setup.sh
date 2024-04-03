@@ -18,6 +18,7 @@ _project_setup() {
   p["_status_warning"]="${TEXT_YELLOW}${TEXT_BOLD}[WARNING]${TEXT_RESET}"
   p["_status_error"]="${TEXT_RED}${TEXT_BOLD}[ERROR]${TEXT_RESET}"
   p["_status_danger"]="${TEXT_RED}${TEXT_BOLD}[DANGER]${TEXT_RESET}"
+  p["_status_debug"]="${TEXT_YELLOW}${TEXT_BOLD}[DEBUG]${TEXT_RESET}"
 
   # Set up path variables.
   p["projects_path"]="/etc/project-cmd/projects.d"

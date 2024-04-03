@@ -396,6 +396,7 @@ _project_global_script_create_nginx_config_for_project() {
   proxy_project_path="$(_project_get_project_path_by_name "$proxy_project_name")"
   local nginx_configs_dir
   nginx_configs_dir="$(_project_get_env_value "$proxy_project_name" "PROJECT_NGINX_CONFIGS_DIR")"
+  echo "create nginx config for project $project_name"
 
   declare -a project_tags=()
   _project_get_tags "$project_name" project_tags
@@ -416,7 +417,8 @@ _project_global_script_create_nginx_config_for_project() {
     p["project_tag"]=""
   else
     # Update php env for the given tag or empty.
-    project_domain="$(_project_get_env_value "$project_name" PROJECT_DOMAIN)"
+    project_domain="$(_project_get_env_value "$project_name" PROJECT_DOMAIN "" "" "1")"
+    echo "project domain $project_domain, $PROJECT_DOMAIN"
     output_file="$proxy_project_path/$nginx_configs_dir/$project_domain.conf"
     project_run_global_script "create_nginx_config" "$template" "$output_file" "$allow_overwriting"
     project_run_global_script "create_nginx_log_files" "$project_name" "$project_path" "$project_domain"
@@ -430,6 +432,8 @@ _project_global_script_add_project_to_proxy() {
   local path_in_proxy="${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${PROJECT_DOMAIN}}"
 
   _project_run_script "$proxy_project_name" "$proxy_project_path" "volumes_add" "$PROJECT_PATH" "$path_in_proxy" "1"
+  echo _project_run_script "$proxy_project_name" "$proxy_project_path" "volumes_add" "$PROJECT_PATH" "$path_in_proxy" "1"
+  echo project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name" "1"
   project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name" "1"
 
   _project_setup_project "$proxy_project_name"

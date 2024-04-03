@@ -87,6 +87,10 @@ project_show_success() {
   echo -e "${p["_status_success"]} $1" >&2
 }
 
+project_show_debug() {
+  echo -e "${p["_status_debug"]} $1" >&2
+}
+
 project_show_message() {
   echo -e "$1" >&2
 }
@@ -612,6 +616,11 @@ _project_get_env_value() {
   local variable_name="$2"
   local project_tag="${3:-${p["project_tag"]}}"
   local default_value="$4"
+  local debug="$5"
+
+  if [ -n "$debug" ]; then
+    project_show_debug "_project_get_env_value: project $project_name, variable $variable_name, tag $project_tag, default value $default_value"
+  fi
 
   local project_path
   project_path=$(_project_get_project_path_by_name "$project_name")
@@ -629,6 +638,9 @@ _project_get_env_value() {
   for env_file in "${env_files[@]}"; do
     shdotenv_arguments+=('-e')
     shdotenv_arguments+=("$env_file")
+    if [ -n "$debug" ]; then
+      project_show_debug "_project_get_env_value: using env file: $env_file"
+    fi
   done
 
   shdotenv_arguments+=('--overload')
