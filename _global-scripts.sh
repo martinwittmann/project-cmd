@@ -731,3 +731,54 @@ _project_get_last_borg_backup_archive() {
   local project_name="${1:-${PROJECT_NAME}}"
   _project_global_script_list_backups_for_project "$project_name" | sort -r | head -n 1 | awk '{print $1}'
 }
+
+
+_project_global_script_rotate_backups_for_project() {
+  local project_name="${1:-${PROJECT_NAME}}"
+
+  if [ -z "$project_name" ]; then
+    project_show_error "Could not find project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
+    project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  local borg_arguments=()
+
+  local keep_daily
+  local keep_weekly
+  local keep_monthly
+  local keep_yearly
+  # We don't use default values to allow projects to define their retention
+  # policies as needed.
+  keep_daily=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_DAILY)
+  if [ -n "$keep_daily" ] && _project_is_int "$keep_daily"; then
+    borg_arguments+=("--keep_daily" "$keep_daily")
+  fi
+
+  keep_weekly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_WEEKLY)
+  if [ -n "$keep_weekly" ] && _project_is_int "$keep_weekly"; then
+    borg_arguments+=("--keep_weekly" "$keep_weekly")
+  fi
+
+  keep_monthly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_MONTHLY)
+  if [ -n "$keep_monthly" ] && _project_is_int "$keep_monthly"; then
+    borg_arguments+=("--keep_monthly" "$keep_monthly")
+  fi
+
+  keep_yearly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_YEARLY)
+  if [ -n "$keep_yearly" ] && _project_is_int "$keep_yearly"; then
+    borg_arguments+=("--keep_yearly" "$keep_yearly")
+  fi
+
+  if [ ${#borg_arguments[@]} -eq 0 ]; then
+    project_show_error "No retention / pruning parameters set for this project.\nExiting to prevent losing all backups."
+  fi
+
+  (
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg prune "${borg_arguments[@]}" --list --dry-run "${repository}"
+  )
+}
