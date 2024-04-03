@@ -746,7 +746,7 @@ _project_global_script_rotate_backups_for_project() {
     return 1
   fi
 
-  local borg_arguments=()
+  local keep_arguments=()
 
   local keep_daily
   local keep_weekly
@@ -756,29 +756,33 @@ _project_global_script_rotate_backups_for_project() {
   # policies as needed.
   keep_daily=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_DAILY)
   if [ -n "$keep_daily" ] && _project_is_int "$keep_daily"; then
-    borg_arguments+=("--keep_daily" "$keep_daily")
+    keep_arguments+=("--keep_daily" "$keep_daily")
   fi
 
   keep_weekly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_WEEKLY)
   if [ -n "$keep_weekly" ] && _project_is_int "$keep_weekly"; then
-    borg_arguments+=("--keep_weekly" "$keep_weekly")
+    keep_arguments+=("--keep_weekly" "$keep_weekly")
   fi
 
   keep_monthly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_MONTHLY)
   if [ -n "$keep_monthly" ] && _project_is_int "$keep_monthly"; then
-    borg_arguments+=("--keep_monthly" "$keep_monthly")
+    keep_arguments+=("--keep_monthly" "$keep_monthly")
   fi
 
   keep_yearly=$(_project_get_env_value "$project_name" PROJECT_BACKUP_KEEP_YEARLY)
   if [ -n "$keep_yearly" ] && _project_is_int "$keep_yearly"; then
-    borg_arguments+=("--keep_yearly" "$keep_yearly")
+    keep_arguments+=("--keep_yearly" "$keep_yearly")
   fi
 
-  if [ ${#borg_arguments[@]} -eq 0 ]; then
-    project_show_error "No retention / pruning parameters set for this project.\nExiting to prevent losing all backups."
+  if [ ${#keep_arguments[@]} -eq 0 ]; then
+    project_show_error "No retention / pruning parameters set for this project.\nExiting to prevent losing backups."
+    return 1
   fi
 
+  local passphrase
+  passphrase=$(_project_get_borg_backup_passphrase "$project_name")
   (
-    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg prune "${borg_arguments[@]}" --list --dry-run "${repository}"
+    BORG_PASSPHRASE="$passphrase" borg prune "${keep_arguments[@]}" --list --dry-run "${repository}"
+    BORG_PASSPHRASE="$passphrase" borg compact "${repository}"
   )
 }
