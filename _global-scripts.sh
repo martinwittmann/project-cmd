@@ -546,7 +546,7 @@ _project_global_script_set_up_backups() {
       cat "$public_key_file" | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
     )
 
-    if [ $? -eq 0 ]; then
+    if [ $? -ne 0 ]; then
       project_show_error "Error adding public key to  \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\"."
       return 1
     fi
