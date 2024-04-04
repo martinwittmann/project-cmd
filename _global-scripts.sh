@@ -545,6 +545,11 @@ _project_global_script_set_up_backups() {
       # Install the public key on the storagebox and add it to known_hosts by using StrictHostKeyChecking=accept-new.
       cat "$public_key_file" | SSHPASS="$ssh_password" sshpass -e ssh -o StrictHostKeyChecking=accept-new "$ssh_user@$ssh_host" -p "$ssh_port" install-ssh-key
     )
+
+    if [ $? -eq 0 ]; then
+      project_show_error "Error adding public key to  \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\"."
+      return 1
+    fi
     project_show_success "Set up ssh connection + public key authentication to \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\"."
   else
     project_show_success "Ssh connection \"${TEXT_YELLOW}${ssh_host}${TEXT_RESET}\" is already working."
