@@ -251,6 +251,13 @@ project_create_from_template() {
 
   project_path="$(realpath "$project_path")"
 
+  local project_env
+  project_env="$(_project_get_env_value "server_setup" "PROJECT_ENV")"
+  # Update project env if we have a server env.
+  if [ -n "$project_env" ]; then
+    sed -i "s/^PROJECT_ENV=.*/PROJECT_ENV=$project_env/" "$project_path/.env"
+  fi
+
   # Set project name in .env
   sed -i "s/^PROJECT_NAME=.*/PROJECT_NAME=$project_name/" "$project_path/.env"
 

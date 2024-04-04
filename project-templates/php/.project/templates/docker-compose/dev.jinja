@@ -3,12 +3,12 @@ services:
   app:
     container_name: {{ container_name }}
     build:
-      context: ./.project/docker/app
+      context: ./app
       args:
         - CONTAINER_UID={{ container_uid }}
         - APP_ENV={{ environment }}
     volumes:
-      - ./:{{ project_path_in_container|default('/srv/app') }}
+      - ../../:{{ project_path_in_container|default('/srv/app') }}
     restart: always
     user: www-data
     extra_hosts:
