@@ -234,6 +234,11 @@ project_create_from_template() {
     return 1
   fi
 
+  if [ -z "$project_path" ]; then
+    project_show_error "You need to provide a path for this project."
+    return 1
+  fi
+
   if [ ! -d "$project_path" ] && ! mkdir -p "$project_path"; then
     project_show_error "Could not create project directory \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
     return 1
