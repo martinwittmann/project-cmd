@@ -786,3 +786,27 @@ _project_global_script_rotate_backups_for_project() {
     BORG_PASSPHRASE="$passphrase" borg compact "${repository}"
   )
 }
+
+_project_global_script_ssh_into_backup() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  local ssh_host
+  local ssh_port
+  local ssh_user
+  local ssh_password
+
+  if [ "$project_name" == "$PROJECT_NAME" ]; then
+    ssh_host="$PROJECT_BACKUP_SSH_HOST"
+    ssh_port="${PROJECT_BACKUP_SSH_PORT:-22}"
+    ssh_user="$PROJECT_BACKUP_SSH_USER"
+    ssh_password="$PROJECT_BACKUP_SSH_PASSWORD"
+  else
+    ssh_host=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_HOST)
+    ssh_port=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PORT "" "22")
+    ssh_user=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_USER)
+    ssh_password=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PASSWORD)
+  fi
+
+  (
+    SSHPASS="$ssh_password" sshpass -e ssh "$ssh_user@$ssh_host" -p "$ssh_port"
+  )
+}
