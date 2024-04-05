@@ -60,6 +60,11 @@ _project_global_script_stop() {
   fi
 }
 
+_project_global_script_restart() {
+  _project_global_script_stop
+  _project_global_script_start
+}
+
 _project_global_script_root() {
   docker exec -it --user root -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_NAME" /bin/bash
 }
