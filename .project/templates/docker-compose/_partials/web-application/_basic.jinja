@@ -1,0 +1,20 @@
+    container_name: {{ app_container_name }}
+    build:
+      context: {{ app_build_context|default('./app') }}
+      args:
+        - CONTAINER_UID={{ app_container_uid }}
+        - APP_ENV={{ environment }}
+    volumes:
+      - ../../:{{ app_path_in_container|default('/srv/app') }}
+    {% if app_dependencies is defined and app_dependencies|length > 0 %}
+    links:
+    {%- for dependency in app_dependencies.split(';') %}
+     - {{ dependency }}
+    {%- endfor %}
+    {% endif %}
+    restart: {{ app_restart|default('always') }}
+    user: {{ app_user|default('www-data') }}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks:
+      - {{ proxy_network_name }}

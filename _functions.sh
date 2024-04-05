@@ -205,7 +205,6 @@ project_add_project() {
     return 1
   fi
   local symlink="${p["projects_path"]}/$project_name"
-  echo ln -s "$project_path" "$symlink"
   sudo ln -s "$project_path" "$symlink"
 
   if [ "$quiet" == "0" ]; then
@@ -726,9 +725,9 @@ _project_update_php_env_for_tag() {
   _project_get_env_files "$project_name" "$project_tag" env_files
 
   if [ -z "$project_tag" ]; then
-    output_file="$project_path/env.php"
+    output_file="$project_path/.project/_env.php"
   else
-    output_file="$project_path/env.${project_tag}.php"
+    output_file="$project_path/.project/_env.${project_tag}.php"
   fi
 
   _project_get_php_env_for_files "${env_files[@]}" > "$output_file"

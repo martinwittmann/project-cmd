@@ -1,0 +1,12 @@
+    container_name: {{ db_container_name }}
+    image: {{ db_image|default('schwerpunkt/mariadb:' ~ environment) }}
+    volumes:
+      - ./db/mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: {{ db_root_password }}
+      MYSQL_DATABASE: {{ db_name }}
+      MYSQL_USER: {{ db_user }}
+      MYSQL_PASSWORD: {{ db_password }}
+    restart: unless-stopped
+    networks:
+      - {{ network_name }}
