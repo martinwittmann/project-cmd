@@ -892,3 +892,39 @@ _project_is_int() {
     return 1
   fi
 }
+
+_project_command_exists() {
+  local command="$1"
+  if [ -n "$(type -t "$command")" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+project_open_url() {
+  local url="$1"
+  if [ -z "$url" ]; then
+    project_show_warning "Can't open empty url."
+    return 1
+  fi
+
+  if _project_command_exists "open"; then
+    open "$url"
+  elif _project_command_exists "xdg-open"; then
+    xdg-open "$url"
+  elif _project_command_exists "start"; then
+    start "$url"
+  elif _project_command_exists "sensible-browser"; then
+    sensible-browser "$url"
+  elif _project_command_exists "x-www-browser"; then
+    x-www-browser "$url"
+  elif _project_command_exists "firefox"; then
+    firefox "$url"
+  elif _project_command_exists "google-chrome"; then
+    google-chrome "$url"
+  else
+    project_show_warning "Can't open empty url."
+    return 1
+  fi
+}

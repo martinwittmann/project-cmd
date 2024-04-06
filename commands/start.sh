@@ -12,11 +12,8 @@
   else
     # Default to our global script.
     source "${p["_script_path"]}/_global-scripts.sh"
-    _project_global_script_start
+    _project_global_script_start "$@"
   fi
 
-  if [ -n "$PROJECT_URL" ]; then
-    _project_print_url "$PROJECT_URL"
-  fi
 )
 

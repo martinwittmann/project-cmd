@@ -13,7 +13,10 @@ project_run_global_script() {
   "$function_name" "$@"
 }
 
+# shellcheck disable=SC2120
 _project_global_script_start() {
+  is_dev="$1"
+
   if project_uses_docker; then
     if ! systemctl is-active --quiet docker; then
       sudo systemctl start docker
@@ -37,6 +40,34 @@ _project_global_script_start() {
     project_show_error "I don\'t know how to start project \"${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET}\" since it is not configured to use docker and no start script is specified."
     return 1
   fi
+
+  if [ -n "$is_dev" ]; then
+    dev_script="$(_project_get_env_value "$PROJECT_NAME" "PROJECT_DEV_SCRIPT" "$PROJECT_TAG" "vite")"
+    vite_script_filename=$(_project_get_script_path "$PROJECT_PATH" "$dev_script")
+
+    if [ -n "$PROJECT_URL" ]; then
+      # Open the url in the background after 2s.
+      # We do this to wait for the dev script to be up and running so that the
+      # project can use it when opened in the browser.
+      (
+        sleep 2
+        project_open_url "$PROJECT_URL"
+      ) &
+    fi
+
+    if [ -n "$vite_script_filename" ]; then
+      # Shift away the first argument defining that we'd like to execute the
+      # dev script and only pass along the rest of the arguments.
+      shift
+      _project_run_script "$PROJECT_NAME" "$PROJECT_PATH" "$dev_script" "$@"
+    else
+      project_show_error "The dev script \"${TEXT_YELLOW}${dev_script}${TEXT_RESET}\" can't be found in this project."
+      return 1
+    fi
+  elif [ -n "$PROJECT_URL" ]; then
+    _project_print_url "$PROJECT_URL"
+  fi
+
 }
 
 _project_global_script_stop() {
