@@ -35,7 +35,10 @@ _project_global_script_start() {
 		compose_arguments+=("-f" "$compose_file")
 
     # We always daemonize and remove orphans to not accumulate old containers.
-    docker compose "${compose_arguments[@]}" up -d --remove-orphans
+    if ! docker compose "${compose_arguments[@]}" up -d --remove-orphans; then
+      project_show_error "Error starting docker compose for project \"${TEXT_YELLOW}${PROJECT_NAME}${TEXT_RESET}\"."
+      return 1
+    fi
   else
     project_show_error "I don\'t know how to start project \"${TEXT_YELLOW}$PROJECT_NAME${TEXT_RESET}\" since it is not configured to use docker and no start script is specified."
     return 1
@@ -67,7 +70,6 @@ _project_global_script_start() {
   elif [ -n "$PROJECT_URL" ]; then
     _project_print_url "$PROJECT_URL"
   fi
-
 }
 
 _project_global_script_stop() {
