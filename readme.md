@@ -84,7 +84,7 @@ Create .project/scripts/npm.sh:
   # $PROJECT_PATH_IN_CONTAINER is required for several global scripts but can
   # be omitted if you just use custom scripts.
   ```
-Script names can contain alphanumeric and underscore characters and will be auto completed if a .sh file exists in .projet/scripts.
+Script names can contain alphanumeric and underscore characters and will be auto completed if a .sh file exists in .project/scripts.
 
 ## Change to project
 Execute `p cd [project_name]`. Project names are auto completed.

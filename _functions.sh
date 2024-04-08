@@ -563,7 +563,7 @@ project_render_template() {
   local template_argument_format="[project_name]:[path]/[to]/[template]"
 
   if [ -z "$template_arg" ]; then
-    project_show_error -e "${p["_status_error"]} You need to specify a template in the form \"${TEXT_YELLOW}${template_argument_format}${TEXT_RESET}\" as first argument."
+    project_show_error "${p["_status_error"]} You need to specify a template in the form \"${TEXT_YELLOW}${template_argument_format}${TEXT_RESET}\" as first argument."
     return 1;
   fi
 
