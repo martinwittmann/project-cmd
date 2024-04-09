@@ -202,6 +202,10 @@ _project_global_script_list_mysql_dumps() {
   done
 }
 
+_project_global_script_psql() {
+  docker exec -it --user www-data "$PROJECT_DB_CONTAINER_NAME" psql "$PROJECT_DB_NAME" "$@"
+}
+
 _project_global_script_composer() {
   if project_uses_docker; then
     docker exec -u 1000 -it -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_CONTAINER_NAME" composer "$@"
