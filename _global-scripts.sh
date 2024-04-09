@@ -871,7 +871,6 @@ _project_global_script_mount_project_backup() {
     if [ -n "$base_mount_point" ]; then
       mount_point="$base_mount_point/$project_name"
       # If we use the servers default mount point create it if necessary.
-
       if [ ! -d "$mount_point" ]; then
         mkdir "$mount_point" -p
       fi
@@ -912,5 +911,30 @@ _project_global_script_mount_project_backup() {
   passphrase=$(_project_get_borg_backup_passphrase "$project_name")
   (
     BORG_PASSPHRASE="$passphrase" borg mount "${repository}::${archive_name}" "$mount_point"
+  )
+}
+
+_project_global_script_umount_project_backup() {
+  local mount_point="$1"
+
+  # Try to get the server's default backup mount point if configured.
+  if [ -z "$mount_point" ]; then
+    local base_mount_point
+    base_mount_point="$(_project_get_env_value "server_setup" PROJECT_GLOBAL_BACKUPS_MOUNT_POINT)"
+
+    if [ -n "$base_mount_point" ]; then
+      mount_point="$base_mount_point/$project_name"
+    fi
+  fi
+
+  if [ ! -d "$mount_point" ]; then
+    project_show_error "The given mount point \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\" does not exist."
+    return 1
+  fi
+
+  local passphrase
+  passphrase=$(_project_get_borg_backup_passphrase "$project_name")
+  (
+    BORG_PASSPHRASE="$passphrase" borg umount "$mount_point"
   )
 }
