@@ -859,9 +859,24 @@ _project_global_script_ssh_into_backup() {
 }
 
 _project_global_script_mount_project_backup() {
-  local mount_point="$1"
-  local project_name="${2:-${PROJECT_NAME}}"
-  local archive_name="$3"
+  local project_name="${1:-${PROJECT_NAME}}"
+  local archive_name="$2"
+  local mount_point="$3"
+
+  # Try to get the server's default backup mount point if configured.
+  if [ -z "$mount_point" ]; then
+    local base_mount_point
+    base_mount_point="$(_project_get_env_value "server_setup" PROJECT_GLOBAL_BACKUPS_MOUNT_POINT)"
+
+    if [ -n "$base_mount_point" ]; then
+      mount_point="$base_mount_point/$project_name"
+      # If we use the servers default mount point create it if necessary.
+
+      if [ ! -d "$mount_point" ]; then
+        mkdir "$mount_point" -p
+      fi
+    fi
+  fi
 
   if [ ! -d "$mount_point" ]; then
     project_show_error "The given mount point \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\" does not exist."
@@ -869,7 +884,7 @@ _project_global_script_mount_project_backup() {
   fi
 
   # The flag -A lists everything except '.' and '..'.
-  if [ -z "$(ls -A "$mount_point")" ]; then
+  if [ -n "$(ls -A "$mount_point")" ]; then
     project_show_error "The given mount point \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\" is not empty."
     return 1
   fi
