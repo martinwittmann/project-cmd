@@ -853,3 +853,45 @@ _project_global_script_ssh_into_backup() {
     SSHPASS="$ssh_password" sshpass -e ssh "$ssh_user@$ssh_host" -p "$ssh_port"
   )
 }
+
+_project_global_script_mount_project_backup() {
+  local mount_point="$1"
+  local project_name="${2:-${PROJECT_NAME}}"
+  local archive_name="$3"
+
+  if [ ! -d "$mount_point" ]; then
+    project_show_error "The given mount point \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\" does not exist."
+    return 1
+  fi
+
+  # The flag -A lists everything except '.' and '..'.
+  if [ -z "$(ls -A "$mount_point")" ]; then
+    project_show_error "The given mount point \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\" is not empty."
+    return 1
+  fi
+
+  if [ -z "$project_name" ] || ! project_exists "$project_name"; then
+    project_show_error "Could not find project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
+    project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  if [ -z "$archive_name" ]; then
+    archive_name=$(_project_get_last_borg_backup_archive "$project_name")
+  fi
+
+  if [ -z "$archive_name" ]; then
+    project_show_error "No backup archive name was given and the repository does not contain any archives for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  local passphrase
+  passphrase=$(_project_get_borg_backup_passphrase "$project_name")
+  (
+    BORG_PASSPHRASE="$passphrase" borg mount "${repository}::${archive_name}" "$mount_point"
+  )
+}
