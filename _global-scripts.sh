@@ -203,7 +203,25 @@ _project_global_script_list_mysql_dumps() {
 }
 
 _project_global_script_psql() {
-  docker exec -it --user www-data "$PROJECT_DB_CONTAINER_NAME" psql "$PROJECT_DB_NAME" "$@"
+  local user="${1:-${PROJECT_DB_USER:-postgres}}"
+  local database="${2:-${PROJECT_DB_NAME}}"
+  shift 2
+  docker exec -it --user "$user" "$PROJECT_DB_CONTAINER_NAME" psql -p "$PROJECT_DB_PORT" -d "$database" "$@"
+}
+
+_project_global_script_postgres_import_dump() {
+  local dump_file="$1"
+  local user="${2:-${PROJECT_DB_USER:-postgres}}"
+  if [ ! -f "$dump_file" ]; then
+    project_show_error "Could not find sql dump: \"${TEXT_YELLOW}${dump_file}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  if [ "$PROJECT_USE_DOCKER" == "1" ]; then
+    cat "$dump_file" | docker exec -i --user "$user" "$PROJECT_DB_CONTAINER_NAME" psql -p "$PROJECT_DB_PORT" -d "$PROJECT_DB_NAME"
+  else
+    cat "$dump_file" | psql -d "$PROJECT_DB_NAME"
+  fi 
 }
 
 _project_global_script_composer() {
