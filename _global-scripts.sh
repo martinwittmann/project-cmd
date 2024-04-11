@@ -368,6 +368,11 @@ _project_global_script_create_drupal_hash_salt() {
       project_show_success "Set PROJECT_DRUPAL_HASH_SALT to ${hash_salt}"
     fi
 
+  else
+    local hash_salt
+    hash_salt="$(project_run_global_script drush php:eval 'echo \Drupal\Component\Utility\Crypt::randomBytesBase64(55) . "\n";')"
+    sed -i "s/^PROJECT_DRUPAL_HASH_SALT.*/PROJECT_DRUPAL_HASH_SALT=$hash_salt/" .env
+    project_show_success "Set PROJECT_DRUPAL_HASH_SALT to ${hash_salt}"
   fi
 }
 
