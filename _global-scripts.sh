@@ -461,7 +461,6 @@ _project_global_script_create_nginx_config_for_project() {
   proxy_project_path="$(_project_get_project_path_by_name "$proxy_project_name")"
   local nginx_configs_dir
   nginx_configs_dir="$(_project_get_env_value "$proxy_project_name" "PROJECT_NGINX_CONFIGS_DIR")"
-  echo "create nginx config for project $project_name"
 
   declare -a project_tags=()
   _project_get_tags "$project_name" project_tags
