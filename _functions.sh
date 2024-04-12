@@ -612,7 +612,10 @@ _project_update_php_env() {
 
   # If this project has tags.
   if [ ${#project_tags[@]} -ne 0 ] && [ -z "${p["project_tag"]}" ]; then
-    # Update php env for all tags.
+    # Create / update a global php env anyway since it might be needed.
+    _project_update_php_env_for_tag "$project_name" ""
+
+    # Create / update php env for all tags.
     for project_tag in "${project_tags[@]}"; do
       _project_update_php_env_for_tag "$project_name" "$project_tag"
     done
