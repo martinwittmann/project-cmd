@@ -765,9 +765,9 @@ _project_get_php_env_for_files() {
   output+="function ${function_name}() {\n"
   output+="  \$env = [];\n\n"
   output+="$("${p["_script_path"]}/lib/shdotenv/shdotenv" "${shdotenv_arguments[@]}")"
-  output+="return \$env;\n"
+  output+="\n\n  return \$env;\n"
   output+="}"
-  echo "$output"
+  echo -e "$output"
 }
 
 _project_get_tags() {
