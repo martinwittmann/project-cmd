@@ -492,13 +492,31 @@ _project_global_script_add_project_to_proxy() {
   local proxy_project_name="${1:-${PROJECT_PROXY_PROJECT_NAME:-proxy}}"
   local proxy_project_path
   proxy_project_path="$(_project_get_project_path_by_name "$proxy_project_name")"
-  local path_in_proxy="${PROJECT_PATH_IN_PROXY_CONTAINER:-/srv/${PROJECT_DOMAIN}}"
+  local docker_volumes="$PROJECT_PROXY_DOCKER_VOLUMES"
 
-  _project_run_script "$proxy_project_name" "$proxy_project_path" "volumes_add" "$PROJECT_PATH" "$path_in_proxy" "1"
-  project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name" "1"
 
-  _project_setup_project "$proxy_project_name"
-  _project_run_script "$proxy_project_name" "$proxy_project_path" "docker_compose_update"
+  if [ -n "$PROJECT_NGINX_TEMPLATE" ]; then
+    project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name" "1"
+  else
+    project_show_warning "No nginx config is set for this project."
+  fi
+
+  if [ -n "$docker_volumes" ]; then
+    IFS=';'
+    for volume in $docker_volumes; do
+      # Extract part before the first ':'.
+      local path_on_host="${volume%%:*}"
+
+      # Remove the everything up until the first ':' from the original string.
+      path_in_container="${volume#*:}"
+
+      _project_run_script "$proxy_project_name" "$proxy_project_path" "volumes_add" "$path_on_host" "$path_in_container" "1"
+    done
+    unset IFS
+
+    _project_setup_project "$proxy_project_name"
+    _project_run_script "$proxy_project_name" "$proxy_project_path" "docker_compose_update"
+  fi
 }
 
 _project_global_script_create_nginx_log_files() {
