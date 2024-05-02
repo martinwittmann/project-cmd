@@ -121,9 +121,20 @@ _project_global_script_drush() {
   fi
 
   if project_uses_docker; then
-    docker exec -it -u 1000 -w "$PROJECT_PATH_IN_CONTAINER/web" "$PROJECT_NAME" "$PROJECT_PATH_IN_CONTAINER/vendor/bin/drush$location_prefix" "$@"
+    local docker_arguments=("exec")
+    if SHELL_IS_CRON; then
+      docker_arguments+=("-i")
+    else
+      docker_arguments+=("-it")
+    fi
+    if [ -n "$PROJECT_CONTAINER_UID" ]; then
+      docker_arguments+=("-u" "$PROJECT_CONTAINER_UID")
+    fi
+    docker_arguments+=("-w" "${PROJECT_PATH_IN_CONTAINER}/web" "$PROJECT_CONTAINER_NAME")
+    docker_arguments+=("$PROJECT_PATH_IN_CONTAINER/vendor/bin/drush$location_prefix" "$@")
+    docker "${docker_arguments[@]}"
   else
-    "$PROJECT_PATH/vendor/bin/drush$location_prefix" "$@"
+    "$PROJECT_PATH/vendor/bin/drush${location_prefix}" "$@"
   fi
 }
 
@@ -159,7 +170,8 @@ _project_global_script_mysql_dump() {
 
   echo -e "Creating database dump at \"${TEXT_YELLOW}${short_name}${TEXT_RESET}\"..."
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
-    docker exec -it "$PROJECT_DB_CONTAINER_NAME" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
+    #docker exec -i "$PROJECT_DB_CONTAINER_NAME" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
+    project_docker_exec "$PROJECT_CONTAINER_NAME" "" "$PROJECT_PATH_IN_CONTAINER" "" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   else
     mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   fi
@@ -226,7 +238,7 @@ _project_global_script_postgres_import_dump() {
 
 _project_global_script_composer() {
   if project_uses_docker; then
-    docker exec -u 1000 -it -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_CONTAINER_NAME" composer "$@"
+    project_docker_exec "$PROJECT_CONTAINER_NAME" "" "$PROJECT_PATH_IN_CONTAINER" "" composer "$@"
   elif [ -n "$PROJECT_COMPOSER_BIN_ON_HOST" ]; then
     "$PROJECT_COMPOSER_BIN_ON_HOST" "$@"
   elif type composer &> /dev/null; then
@@ -250,7 +262,7 @@ _project_global_script_build_theme() {
 
 _project_global_script_enter() {
   if project_uses_docker; then
-    docker exec -it -u 1000 -w "$PROJECT_PATH_IN_CONTAINER" "$PROJECT_NAME" /bin/bash
+    project_docker_exec "$PROJECT_CONTAINER_NAME" "" "$PROJECT_PATH_IN_CONTAINER" "" /bin/bash
   else
     project_show_error "This environment is configured not to use docker!"
     return 1

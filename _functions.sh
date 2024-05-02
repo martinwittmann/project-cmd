@@ -943,3 +943,45 @@ project_open_url() {
     return 1
   fi
 }
+
+project_docker_exec() {
+  container_name="$1"
+  user="$2"
+  work_dir="$3"
+  extra_flags="$4"
+  shift 4
+
+  local docker_arguments=("exec")
+  if [ -z "$user" ] && [ -n "$PROJECT_CONTAINER_UID" ]; then
+    user="$PROJECT_CONTAINER_UID"
+  fi
+
+  if [ -n "$user" ]; then
+    docker_arguments+=("--user" "$user")
+  fi
+
+  if [ -n "$work_dir" ]; then
+    docker_arguments+=("-w" "$work_dir")
+  fi
+
+  if [ -z "$extra_flags" ]; then
+    # We default to interactive with tty, unless we're running in cron, then only interactive.
+    if [ -n "$SHELL_IS_CRON" ]; then
+      extra_flags="-i"
+    else
+      extra_flags="-it"
+    fi
+  fi
+
+  if [ -n "$extra_flags" ]; then
+    docker_arguments+=("$extra_flags")
+  fi
+
+  docker_arguments+=("$container_name")
+
+  for custom_argument in "$@"; do
+    docker_arguments+=("$custom_argument")
+  done
+
+  docker "${docker_arguments[@]}"
+}
