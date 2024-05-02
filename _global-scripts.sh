@@ -122,7 +122,7 @@ _project_global_script_drush() {
 
   if project_uses_docker; then
     local docker_arguments=("exec")
-    if SHELL_IS_CRON; then
+    if [ -n "$SHELL_IS_CRON" ]; then
       docker_arguments+=("-i")
     else
       docker_arguments+=("-it")
