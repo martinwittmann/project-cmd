@@ -952,6 +952,10 @@ project_docker_exec() {
   shift 4
 
   local docker_arguments=("exec")
+  if [ -z "$container_name" ]; then
+    container_name="$PROJECT_CONTAINER_NAME"
+  fi
+
   if [ -z "$user" ] && [ -n "$PROJECT_CONTAINER_UID" ]; then
     user="$PROJECT_CONTAINER_UID"
   fi
@@ -975,6 +979,10 @@ project_docker_exec() {
 
   if [ -n "$extra_flags" ]; then
     docker_arguments+=("$extra_flags")
+  fi
+
+  if [ -z "$container_name" ]; then
+    project_show_error "Can't run docker exec with empty container name."
   fi
 
   docker_arguments+=("$container_name")

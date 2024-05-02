@@ -171,7 +171,7 @@ _project_global_script_mysql_dump() {
   echo -e "Creating database dump at \"${TEXT_YELLOW}${short_name}${TEXT_RESET}\"..."
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
     #docker exec -i "$PROJECT_DB_CONTAINER_NAME" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
-    project_docker_exec "$PROJECT_CONTAINER_NAME" "" "$PROJECT_PATH_IN_CONTAINER" "" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
+    project_docker_exec "" "" "$PROJECT_PATH_IN_CONTAINER" "" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   else
     mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   fi
@@ -238,7 +238,7 @@ _project_global_script_postgres_import_dump() {
 
 _project_global_script_composer() {
   if project_uses_docker; then
-    project_docker_exec "$PROJECT_CONTAINER_NAME" "" "$PROJECT_PATH_IN_CONTAINER" "" composer "$@"
+    project_docker_exec "" "" "$PROJECT_PATH_IN_CONTAINER" "" composer "$@"
   elif [ -n "$PROJECT_COMPOSER_BIN_ON_HOST" ]; then
     "$PROJECT_COMPOSER_BIN_ON_HOST" "$@"
   elif type composer &> /dev/null; then
@@ -262,7 +262,7 @@ _project_global_script_build_theme() {
 
 _project_global_script_enter() {
   if project_uses_docker; then
-    project_docker_exec "$PROJECT_CONTAINER_NAME" "" "$PROJECT_PATH_IN_CONTAINER" "" /bin/bash
+    project_docker_exec "" "" "$PROJECT_PATH_IN_CONTAINER" "" /bin/bash
   else
     project_show_error "This environment is configured not to use docker!"
     return 1
