@@ -10,12 +10,14 @@ if [ -n "$command" ]; then
     return 1
   fi
 
+
   # Allow scripts to override the default backup scripts.
   if project_has_script "$PROJECT_NAME" "backup_${command}"; then
     _project_setup_project "$PROJECT_NAME" "$PROJECT_TAG"
     _project_run_script "$PROJECT_NAME" "$PROJECT_PATH" "backup_${command}" "$@"
   else
     # Execute our global scripts which should suffice for most projects.
+    source "${p["_script_path"]}/_global-scripts.sh"
     case $command in
       create)
         project_run_global_script "create_backup_for_project" "$PROJECT_NAME"

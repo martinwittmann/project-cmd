@@ -17,6 +17,7 @@ if [ -n "$command" ]; then
         _project_setup_project "$PROJECT_NAME" "$PROJECT_TAG"
         _project_run_script "$PROJECT_NAME" "$PROJECT_PATH" "docker_compose_update" "$@"
       else
+        source "${p["_script_path"]}/_global-scripts.sh"
         project_run_global_script "docker_compose_update" "$@"
       fi
       ;;
