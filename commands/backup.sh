@@ -18,31 +18,31 @@ if [ -n "$command" ]; then
     # Execute our global scripts which should suffice for most projects.
     case $command in
       create)
-        project_run_global_script "create_backup_for_project" "$@"
+        project_run_global_script "create_backup_for_project" "$PROJECT_NAME"
         ;;
 
       setup)
-        project_run_global_script "set_up_backups" "borg" "$@"
+        project_run_global_script "set_up_backups" "borg" "$PROJECT_NAME"
         ;;
 
       list)
-        project_run_global_script "list_backups_for_project" "$@"
+        project_run_global_script "list_backups_for_project" "$PROJECT_NAME"
         ;;
 
       mount)
-        project_run_global_script "mount_project_backup" "$@"
+        project_run_global_script "mount_project_backup" "$PROJECT_NAME" "$@"
         ;;
 
       rotate)
-        project_run_global_script "rotate_backups_for_project" "$@"
+        project_run_global_script "rotate_backups_for_project" "$PROJECT_NAME"
         ;;
 
       ssh)
-        project_run_global_script "ssh_into_backup" "$@"
+        project_run_global_script "ssh_into_backup" "$PROJECT_NAME"
         ;;
 
       umount)
-        project_run_global_script "umount_project_backup" "$@"
+        project_run_global_script "umount_project_backup" "$PROJECT_NAME"
         ;;
 
     esac;
