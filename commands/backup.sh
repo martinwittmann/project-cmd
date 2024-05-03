@@ -30,6 +30,10 @@ if [ -n "$command" ]; then
         project_run_global_script "mount_project_backup" "$PROJECT_NAME" "$@"
         ;;
 
+      delete)
+        project_run_global_script "backup_delete" "$PROJECT_NAME" "$@"
+        ;;
+
       rotate)
         project_run_global_script "rotate_backups_for_project" "$PROJECT_NAME"
         ;;
@@ -50,7 +54,8 @@ else
     echo "Do backups via borg backup."
     echo "Usage: backup COMMAND"
     echo "Commands:"
-    echo "  create:         Creates a backup for this project."
+    echo "  create:         Creates a backup archive for this project."
+    echo "  delete:         Deletes a backup archive for this project."
     echo "  init:           Initializes a borg repository for this project. This requires several values in the .env file to be set up. See the backup section in .env."
     echo "  list:           Lists the backups that have been created for this project."
     echo "  mount:          Mounts the given archive name to the backup mount point. See PROJECT_BACKUPS_MOUNT_POINT in .env."

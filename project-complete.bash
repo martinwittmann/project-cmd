@@ -39,7 +39,7 @@ _project_autocomplete() {
       ;;
 
     backup)
-      local backup_commands=("create" "setup" "list" "mount" "rotate" "ssh" "umount")
+      local backup_commands=("create" "delete" "setup" "list" "mount" "rotate" "ssh" "umount")
       COMPREPLY=($(compgen -W "${backup_commands[*]}" -- $cur))
       ;;
 

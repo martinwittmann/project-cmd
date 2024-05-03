@@ -1008,6 +1008,26 @@ _project_global_script_umount_project_backup() {
   fi
 }
 
+_project_global_script_backup_delete() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  local archive_name="$2"
+
+  if [ -z "$archive_name" ]; then
+    project_show_error "You need to provide an archive/backup name to delete."
+    return 1
+  fi
+
+  if ! repository=$(_project_get_borg_backup_repository "$project_name"); then
+    project_show_error "Error getting borg backup repository url for project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  (
+    cd "$project_path"
+    BORG_PASSPHRASE=$(_project_get_borg_backup_passphrase "$project_name") borg delete "${repository}::${archive_name}"
+  )
+}
+
 _project_global_script_docker_compose_update() {
   local template="$PROJECT_DOCKER_COMPOSE_TEMPLATE"
   if [ -z "$template" ]; then
