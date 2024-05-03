@@ -5,11 +5,7 @@ command="$1"
 shift
 
 if [ -n "$command" ]; then
-  if [ -z "$PROJECT_NAME" ]; then
-    project_show_error "Can't find a project in the current path."
-    return 1
-  fi
-
+  _project_setup_project "$PROJECT_NAME" "$PROJECT_TAG"
 
   # Allow scripts to override the default backup scripts.
   if project_has_script "$PROJECT_NAME" "backup_${command}"; then

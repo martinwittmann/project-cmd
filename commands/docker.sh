@@ -5,10 +5,7 @@ command="$1"
 shift
 
 if [ -n "$command" ]; then
-  if [ -z "$PROJECT_NAME" ]; then
-    project_show_error "Can't find a project in the current path."
-    return 1
-  fi
+  _project_setup_project "$PROJECT_NAME" "$PROJECT_TAG"
 
   case $command in
 
