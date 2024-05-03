@@ -1,0 +1,142 @@
+# project-cmd .env v2024.05--01
+###############################################################################
+# Global settings
+###############################################################################
+
+PROJECT_NAME={{ project_name }}
+PROJECT_ENV={{ project_env }}
+PROJECT_DOMAIN="{{ project_domain }}"
+PROJECT_URL="http://${PROJECT_DOMAIN}"
+
+
+###############################################################################
+# Docker settings
+###############################################################################
+
+PROJECT_USE_DOCKER=1
+PROJECT_CONTAINER_NAME="${PROJECT_NAME}"
+
+PROJECT_CONTAINER_PORT=9000
+# The port in the container this project runs on.
+
+# The uid that will be used to run docker commands as.
+PROJECT_CONTAINER_UID=1000
+
+# The docker network to use for this project.
+PROJECT_DOCKER_NETWORK_NAME=proxy_bridge
+
+# The path in the container where the project path will be mounted.
+PROJECT_PATH_IN_CONTAINER=/srv/app
+
+# A jinja2 template that creates the docker compose file used for this project.
+# Format: [project_name]:[path_in_project_templates]
+# Example: proxy:docker-compose/prod
+#          -> /path/to/proxy/.project/templates/docker-compose/prod.jinja
+# Default value: "$PROJECT_NAME:docker-compose/$PROJECT_ENV"
+PROJECT_DOCKER_COMPOSE_TEMPLATE=
+
+
+###############################################################################
+# Proxy settings
+###############################################################################
+
+# The proxy project is a reverse proxy that can also be a project-cmd project.
+# In this case adding this project to the proxy to make it publicly available
+# can be done by executing "project add_to_proxy".
+# By convention the reverse proxy project is named "proxy".
+PROJECT_PROXY_PROJECT_NAME=proxy
+# The path to the template to use for creating an nginx config.
+PROJECT_NGINX_TEMPLATE="${PROJECT_PROXY_PROJECT_NAME}:nginx/drupal_docker_https_non_www"
+
+
+###############################################################################
+# Database settings.
+###############################################################################
+PROJECT_DB_CONTAINER_NAME="${PROJECT_NAME}_db"
+PROJECT_DB_HOST="${PROJECT_CONTAINER_NAME}_db"
+PROJECT_DB_NAME="${PROJECT_NAME}"
+PROJECT_DB_USER="${PROJECT_NAME}"
+PROJECT_DB_PASSWORD=evi
+PROJECT_DB_ROOT_PASSWORD=evi
+PROJECT_DB_PORT=3306
+
+
+###############################################################################
+# Project specific settings.
+###############################################################################
+
+# When reinstalling this will be used as drupal's system.site config uuid.
+PROJECT_DRUPAL_CONFIG_UUID=47ba8508-abda-4c55-8b3b-70c386ffd23b
+# Add multiple trusted host patterns by separating them with a comma.
+PROJECT_DRUPAL_TRUSTED_HOST_PATTERNS="^${PROJECT_DOMAIN}\$"
+PROJECT_DRUPAL_HASH_SALT=
+
+
+###############################################################################
+# Frontend settings.
+###############################################################################
+
+# In website projects this should default to the theme directory.
+PROJECT_NPM_ROOT=web/themes/custom/wireframes
+# Define a project script that will be used for dev purposes, like webpack or vite.
+PROJECT_DEV_SCRIPT=vite
+PROJECT_VITE_PORT=5173
+PROJECT_VITE_PORT_ON_HOST="${PROJECT_VITE_PORT}"
+
+
+###############################################################################
+# E-Mail sending settings.
+###############################################################################
+
+PROJECT_SMTP_HOST=wp10564766.mailout.server-he.de
+PROJECT_SMTP_PORT=587
+PROJECT_SMTP_PROTOCOL=tls
+PROJECT_SMTP_FROM=
+PROJECT_SMTP_USERNAME=
+PROJECT_SMTP_PASSWORD=
+PROJECT_SMTP_AUTO_TLS=on
+
+
+###############################################################################
+# Backups
+###############################################################################
+
+# Backups are created with borg backup and project-cmd provides global scripts
+# to make creating and managing those backups easy.
+# Below is a step-by-step documentation how to set up backups for your project.
+
+PROJECT_BACKUP_SSH_USER=""
+PROJECT_BACKUP_SSH_PASSWORD=""
+PROJECT_BACKUP_SSH_HOST=""
+PROJECT_BACKUP_SSH_PORT=""
+
+# A passphrase to store all backups encrypted. This will be created for you
+# when setting up backups with "project backup setup"
+PROJECT_BACKUP_PASSPHRASE=""
+# This defines a target path inside the ssh user's default path.
+# We default this to backup to keep .ssh directory out of the backup path.
+PROJECT_BACKUP_TARGET_PATH="backup"
+
+# Backup rotation / retention policy.
+PROJECT_BACKUP_KEEP_DAILY=14
+PROJECT_BACKUP_KEEP_WEEKLY=2
+PROJECT_BACKUP_KEEP_MONTHLY=12
+PROJECT_BACKUP_KEEP_YEARLY=3
+
+# By default backups will be mounted on demand into the directory set in
+# the "server_setup" project's PROJECT_GLOBAL_BACKUPS_MOUNT_POINT.
+# You can override this by setting a project-specific mount point here.
+# PROJECT_BACKUP_MOUNT_POINT=
+
+# Setting up backups:
+#   1. The server needs to be able to act as a borg backup server.
+#   2. Create ssh user credentials for this project. Do not share credentials if possible.
+#   3. Add the ssh user credentials in the PROJECT_BACKUP_SSH_* variables.
+#   4. Run "project backup setup"
+#   5. Create the file .project/backup.patterns to define which files to
+#      include/exclude in backups.
+#   6. Create the file .project/backup_restore.patterns to define which files to restore/exclude when restoring a specific backup archive.
+
+# Backup pattern files (backup.patterns, backup_restore.patterns)
+# These are pattern files as expected by borg backup's --patterns-from flag.
+# See borg's patternfile documentation: https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns

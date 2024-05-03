@@ -915,6 +915,10 @@ _project_global_script_mount_project_backup() {
   local archive_name="$2"
   local mount_point="$3"
 
+  if [ -z "$mount_point" ]; then
+    mount_point="$(_project_get_env_value "$project_name" PROJECT_BACKUP_MOUNT_POINT)"
+  fi
+
   # Try to get the server's default backup mount point if configured.
   if [ -z "$mount_point" ]; then
     local base_mount_point
@@ -989,4 +993,29 @@ _project_global_script_umount_project_backup() {
   (
     BORG_PASSPHRASE="$passphrase" borg umount "$mount_point"
   )
+}
+
+_project_global_script_docker_compose_update() {
+  local template="$PROJECT_DOCKER_COMPOSE_TEMPLATE"
+  if [ -z "$template" ]; then
+    template="$PROJECT_NAME:docker-compose/$PROJECT_ENV"
+  fi
+
+  # The default implementation uses the most commonly used variables.
+  # This can be overriden on a per-project basis by creating a project
+  # script with the name "docker_compose_update.sh".See commands/docker.sh.
+  project_render_template "$template"\
+   environment "\${PROJECT_ENV}"\
+   project_name "\${PROJECT_NAME}"\
+   container_name "\${PROJECT_CONTAINER_NAME}"\
+   container_uid "\${PROJECT_CONTAINER_UID}"\
+   db_container_name "\${PROJECT_DB_CONTAINER_NAME}"\
+   db_root_password "\${PROJECT_DB_ROOT_PASSWORD}"\
+   db_name "\${PROJECT_DB_NAME}"\
+   db_user "\${PROJECT_DB_USER}"\
+   db_password "\${PROJECT_DB_PASSWORD}"\
+   project_path_in_container "\${PROJECT_PATH_IN_CONTAINER}"\
+   network_name "$PROJECT_DOCKER_NETWORK_NAME"\
+  > "$(project_get_docker_compose_path)"
+
 }

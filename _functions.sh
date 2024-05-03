@@ -993,3 +993,25 @@ project_docker_exec() {
 
   docker "${docker_arguments[@]}"
 }
+
+project_has_script() {
+  local project_name="${1:-${PROJECT_NAME}}"
+  local script_name="$2"
+
+  if [ -z "$script_name" ]; then
+    project_show_error "You need to provided a script name to be able to check if a script with this name exists."
+    return 1
+  fi
+
+  local project_path
+  project_path="$(_project_get_project_path_by_name "$project_name")"
+
+  local script_filename
+  script_filename="$(_project_get_script_path "$project_path" "$script_name")"
+
+  if [ -f "$script_filename" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
