@@ -39,7 +39,7 @@ if [ -n "$command" ]; then
         ;;
 
       umount)
-        project_run_global_script "umount_project_backup"
+        project_run_global_script "umount_project_backup" "$PROJECT_NAME"
         ;;
 
     esac;

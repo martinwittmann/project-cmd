@@ -974,7 +974,8 @@ _project_global_script_mount_project_backup() {
 }
 
 _project_global_script_umount_project_backup() {
-  local mount_point="$1"
+  local project_name="${1:-${PROJECT_NAME}}"
+  local mount_point="$2"
 
   if [ -z "$mount_point" ]; then
     mount_point="$(_project_get_env_value "$project_name" PROJECT_BACKUP_MOUNT_POINT)"
