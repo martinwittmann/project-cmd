@@ -130,13 +130,16 @@ PROJECT_BACKUP_KEEP_YEARLY=3
 
 # Setting up backups:
 #   1. The server needs to be able to act as a borg backup server.
-#   2. Create ssh user credentials for this project. Do not share credentials if possible.
+#   2. Create ssh user credentials for this project. Do not share credentials if
+#      possible.
 #   3. Add the ssh user credentials in the PROJECT_BACKUP_SSH_* variables.
 #   4. Run "project backup setup"
 #   5. Create the file .project/backup.patterns to define which files to
 #      include/exclude in backups.
-#   6. Create the file .project/backup_restore.patterns to define which files to restore/exclude when restoring a specific backup archive.
+#   6. Create the file .project/backup_restore.patterns to define which files
+#      to restore/exclude when restoring a specific backup archive.
 
 # Backup pattern files (backup.patterns, backup_restore.patterns)
 # These are pattern files as expected by borg backup's --patterns-from flag.
-# See borg's patternfile documentation: https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns
+# See borg's patternfile documentation:
+# https://borgbackup.readthedocs.io/en/stable/usage/help.html#borg-patterns
