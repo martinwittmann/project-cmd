@@ -973,6 +973,10 @@ _project_global_script_mount_project_backup() {
 _project_global_script_umount_project_backup() {
   local mount_point="$1"
 
+  if [ -z "$mount_point" ]; then
+    mount_point="$(_project_get_env_value "$project_name" PROJECT_BACKUP_MOUNT_POINT)"
+  fi
+
   # Try to get the server's default backup mount point if configured.
   if [ -z "$mount_point" ]; then
     local base_mount_point

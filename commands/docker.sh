@@ -11,7 +11,6 @@ if [ -n "$command" ]; then
 
     compose_update)
       if project_has_script "$PROJECT_NAME" "docker_compose_update"; then
-        _project_setup_project "$PROJECT_NAME" "$PROJECT_TAG"
         _project_run_script "$PROJECT_NAME" "$PROJECT_PATH" "docker_compose_update" "$@"
       else
         source "${p["_script_path"]}/_global-scripts.sh"
