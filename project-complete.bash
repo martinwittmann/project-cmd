@@ -38,10 +38,20 @@ _project_autocomplete() {
       COMPREPLY=($(compgen -W "${commands[*]}" -- $cur))
       ;;
 
+    backup)
+      local backup_commands=("create" "setup" "list" "mount" "rotate" "ssh" "umount")
+      COMPREPLY=($(compgen -W "${backup_commands[*]}" -- $cur))
+      ;;
+
     cd)
       if [ -f "$completions_base/cd.sh" ]; then
         source "$completions_base/cd.sh"
       fi
+      ;;
+
+    docker)
+      local docker_commands=("compose_update")
+      COMPREPLY=($(compgen -W "${docker_commands[*]}" -- $cur))
       ;;
 
     remove)
