@@ -968,6 +968,9 @@ _project_global_script_mount_project_backup() {
   (
     BORG_PASSPHRASE="$passphrase" borg mount "${repository}::${archive_name}" "$mount_point"
   )
+  if [ $? -eq 0 ]; then
+    project_show_success "Mounted backup archive \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\" on \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\"."
+  fi
 }
 
 _project_global_script_umount_project_backup() {
@@ -997,6 +1000,11 @@ _project_global_script_umount_project_backup() {
   (
     BORG_PASSPHRASE="$passphrase" borg umount "$mount_point"
   )
+  if [ $? -eq 0 ]; then
+    project_show_success "Unmounted backup archive \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\" from \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\"."
+  else
+    project_show_error "Error unmounting backup archive \"${TEXT_YELLOW}${archive_name}${TEXT_RESET}\" from \"${TEXT_YELLOW}${mount_point}${TEXT_RESET}\"."
+  fi
 }
 
 _project_global_script_docker_compose_update() {
