@@ -12,5 +12,6 @@ if ! project_path="$(_project_get_project_path_by_name "$project_name_to_remove"
   return 1
 fi
 
+unset PROJECTS["$project_name_to_remove"]
 sudo unlink "/etc/project-cmd/projects.d/$project_name_to_remove"
 
