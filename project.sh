@@ -1,13 +1,15 @@
 #!/bin/bash
 
+
 # Bootstrapping.
 declare -A p
+declare -A PROJECTS
 p["_script_path"]="$(realpath "${BASH_SOURCE[0]}" | xargs dirname)"
 source "${p["_script_path"]}/_setup.sh"
 
-  PROJECT_NAME=""
-  PROJECT_PATH=""
-  PROJECT_TAG=""
+PROJECT_NAME=""
+PROJECT_PATH=""
+PROJECT_TAG=""
 
 _project_cmd() {
   # The path of project.sh.

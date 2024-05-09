@@ -15,7 +15,8 @@ project_run_global_script() {
 
 # shellcheck disable=SC2120
 _project_global_script_start() {
-  is_dev="$1"
+  local is_dev="$1"
+  local hide_url="$2"
 
   if project_uses_docker; then
     if ! systemctl is-active --quiet docker; then
@@ -67,7 +68,7 @@ _project_global_script_start() {
       project_show_error "The dev script \"${TEXT_YELLOW}${dev_script}${TEXT_RESET}\" can't be found in this project."
       return 1
     fi
-  elif [ -n "$PROJECT_URL" ]; then
+  elif [ -n "$PROJECT_URL" ] && [ -z "$hide_url" ]; then
     _project_print_url "$PROJECT_URL"
   fi
 }
@@ -170,7 +171,6 @@ _project_global_script_mysql_dump() {
 
   echo -e "Creating database dump at \"${TEXT_YELLOW}${short_name}${TEXT_RESET}\"..."
   if [ "$PROJECT_USE_DOCKER" == "1" ]; then
-    #docker exec -i "$PROJECT_DB_CONTAINER_NAME" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
     project_docker_exec "" "" "$PROJECT_PATH_IN_CONTAINER" "" mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
   else
     mariadb-dump -h"$PROJECT_DB_HOST" -u"$PROJECT_DB_USER" -p"$PROJECT_DB_PASSWORD" "$PROJECT_DB_NAME" > "$dump_file"
@@ -298,18 +298,6 @@ _project_global_script_vite() {
     npm run start
 }
 
-_project_global_script_docker_containers_rebuild() {
-  if project_uses_docker; then
-    local container_name="${1:-app}"
-    local compose_file
-    compose_file="$(project_get_docker_compose_path)"
-    docker compose --project-name "$PROJECT_NAME" -f "$compose_file" build "$container_name"
-  else
-    project_show_error "This environment is configured not to use docker!"
-    return 1
-  fi
-}
-
 _project_global_script_compare_with_project() {
   local relative_filename="$1"
   local project_name="$2"
@@ -388,7 +376,7 @@ _project_global_script_create_drupal_hash_salt() {
   fi
 }
 
-_project_global_script_update_drupal_core() {
+_project_global_script_drupal_update_core() {
   project_run_global_script composer update "drupal/core-*" --with-all-dependencies
 }
 
@@ -506,7 +494,6 @@ _project_global_script_add_project_to_proxy() {
   proxy_project_path="$(_project_get_project_path_by_name "$proxy_project_name")"
   local docker_volumes="$PROJECT_PROXY_DOCKER_VOLUMES"
 
-
   if [ -n "$PROJECT_NGINX_TEMPLATE" ]; then
     project_run_global_script "create_nginx_config_for_project" "$PROJECT_NAME" "$PROJECT_NGINX_TEMPLATE" "$proxy_project_name" "1"
   else
@@ -553,23 +540,13 @@ _project_global_script_end() {
   sudo systemctl stop docker
 }
 
-_project_global_script_create_passphrase() {
-  local length=${1:-24}
-  # Try to use openssl and fall back to urandom
-  if type openssl &> /dev/null; then
-    openssl rand -base64 $((length * 3/4)) | tr -d '\n' | tr -d '='
-  else
-    tr -dc '[:alnum:]' < /dev/urandom | head -c $length
-  fi
-}
-
 _project_global_script_create_backup_passphrase() {
   local project_name="${1:-${PROJECT_NAME}}"
   local project_tag="${2:-${PROJECT_TAG}}"
   local overwrite="$3"
 
   local passphrase
-  passphrase=$(project_run_global_script create_passphrase)
+  passphrase=$(project_create_passphrase)
 
   declare -a env_files=()
   _project_get_env_files "$project_name" "$project_tag" env_files
@@ -1050,5 +1027,127 @@ _project_global_script_docker_compose_update() {
    project_path_in_container "\${PROJECT_PATH_IN_CONTAINER}"\
    network_name "$PROJECT_DOCKER_NETWORK_NAME"\
   > "$(project_get_docker_compose_path)"
+}
 
+_project_global_script_drupal_install_site_interactively() {
+  project_show_message "Drupal installation:"
+  read -p "Site name: ($PROJECT_NAME)" site_name
+  if [ -z "$site_name" ]; then
+    site_name="$PROJECT_NAME"
+  fi
+
+  read -p "Installation profile: (standard)" profile
+  if [ -z "$profile" ]; then
+    profile="standard"
+  fi
+
+  read -p "Locale: (de)" locale
+  if [ -z "$locale" ]; then
+    project_name="de"
+  fi
+
+  read -p "Admin user: (admin)" admin_user
+  if [ -z "$admin_user" ]; then
+    admin_user="admin"
+  fi
+
+  read -p "Email address for user $admin_user" admin_email
+  if [ -z "$admin_email" ]; then
+    project_show_error "The email address cannot be empty."
+  fi
+
+  read -ps "Password for user $admin_user:" admin_password_1
+  read -ps "Please reenter the password:" admin_password_2
+
+  if [ -z "$admin_password_1" ]; then
+    project_show_error "The admin password cannot be empty."
+  fi
+
+  if [ "$admin_password_1" != "$admin_password_2" ]; then
+    project_show_error "The passwords do not match."
+  fi
+
+  local db_url
+  db_url=$(project_format_url "mysql" "$PROJECT_DB_USER" "$PROJECT_DB_PASSWORD" "$PROJECT_DB_HOST" "$PROJECT_DB_PORT" "$PROJECT_DB_NAME")
+
+  echo ""
+  echo "Site name: $site_name"
+  echo "Installation profile: $profile"
+  echo "Locale: $locale"
+  echo "Database host: $PROJECT_DB_HOST:$PROJECT_DB_PORT"
+  echo "Database name: $PROJECT_DB_NAME"
+  echo "Database user: $PROJECT_DB_USER"
+  echo -n "Database password: "
+  project_get_masked_password "$PROJECT_DB_PASSWORD"
+  echo "Admin user: $admin_user"
+  echo -n "Admin password: "
+  project_get_masked_password "$admin_password_1"
+  echo "Admin user email: $admin_email"
+
+  read -p "Install drupal site with this information? (y/n): " do_install
+
+  case "$do_install" in
+    [yY][eE][sS]|[yY])
+      _project_global_script_drupal_install_site "$profile" "$site_name" "$locale" "$db_url" "$admin_user" "$admin_password_1" "$admin_email"
+      ;;
+    *)
+      project_show_warning "Aborted."
+      return 1
+      ;;
+  esac
+}
+
+_project_global_script_drupal_install_site() {
+  local profile="$1"
+  if [ -z "$profile" ]; then
+    project_show_error "You need to provide an installation profile."
+    return 1
+  fi
+
+  local site_name="$2"
+  if [ -z "$site_name" ]; then
+    project_show_error "You need to provide site name."
+    return 1
+  fi
+
+  local locale="$3"
+  if [ -z "$locale" ]; then
+    project_show_error "You need to provide a locale."
+    return 1
+  fi
+
+  local db_url="$4"
+  if [ -z "$db_url" ]; then
+    project_show_error "You need to provide database credentials."
+    return 1
+  fi
+
+  local admin_user="$5"
+  if [ -z "$admin_user" ]; then
+    project_show_error "You need to provide a name for the administrative user."
+    return 1
+  fi
+
+  local admin_password="$6"
+  if [ -z "$admin_password" ]; then
+    project_show_error "You need to provide a password for the administrative user."
+    return 1
+  fi
+
+  local admin_email="$7"
+  if [ -z "$admin_email" ]; then
+    project_show_error "You need to provide an email address for the administrative user."
+    return 1
+  fi
+
+  arguments=(
+    "$profile"
+    "--locale" "$locale"
+    "--account-name" "$admin_user"
+    "--account-pass" "$admin_password"
+    "--account-mail" "$admin_email"
+    "--site-name" "$site_name"
+    "--db-url" "$db_url"
+  )
+  _project_global_script_run_drush site-install "${arguments[@]}"
 }

@@ -216,7 +216,10 @@ project_create_from_template() {
   local project_template="$1"
   local project_name="$2"
   local project_path="$3"
+  shift 3
+  # All additional arguments will be treated in pairs as "[env_var_name]" "[env_var_value]"
 
+  # Make sure the arguments are valid.
   local template_path="${p["_script_path"]}/project-templates/$project_template"
   if [ -z "$project_template" ] || [ ! -d "$template_path" ]; then
     project_show_error "Could not find project template \"${TEXT_YELLOW}${project_template}${TEXT_RESET}\"."
@@ -243,23 +246,13 @@ project_create_from_template() {
     return 1
   fi
 
-  if ! rsync -a "$template_path/" "$project_path"; then
-    project_show_error "Could not copy project template to \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
+  if [ -n "$(ls -A "$project_path")" ]; then
+    project_show_error "The project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" is not empty."
     return 1
   fi
 
-  project_path="$(realpath "$project_path")"
 
-  local project_env
-  project_env="$(_project_get_env_value "server_setup" "PROJECT_ENV")"
-  # Update project env if we have a server env.
-  if [ -n "$project_env" ]; then
-    sed -i "s/^PROJECT_ENV=.*/PROJECT_ENV=$project_env/" "$project_path/.env"
-  fi
-
-  # Set project name in .env
-  sed -i "s/^PROJECT_NAME=.*/PROJECT_NAME=$project_name/" "$project_path/.env"
-
+  # Add the new project to project-cmd.
   if ! project_add_project "$project_name" "$project_path"; then
     project_show_error "Could not add project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
     return 1
@@ -267,10 +260,67 @@ project_create_from_template() {
 
   # Make project-cmd aware of the new project.
   _project_populate_projects_array
+
+  # Copy the project template to the project path.
+  if ! rsync -a "$template_path/" "$project_path"; then
+    project_show_error "Could not copy project template to \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\"."
+    return 1
+  fi
+
+  project_path="$(realpath "$project_path")"
+
+  # Set .env values.
+  local env_file="$project_path/.env"
+  project_set_env_file_variable "$env_file" "PROJECT_NAME" "$project_name" "1" "1"
+
+  local project_env
+  project_env="$(_project_get_env_value "server_setup" "PROJECT_ENV")"
+  # Update project env if we have a server env.
+  if [ -n "$project_env" ]; then
+    project_set_env_file_variable "$env_file" "PROJECT_ENV" "$project_env" "1" "1"
+  fi
+
+  # Set/create a db password if the variable exists in .env.
+  local db_password
+  db_password="$(_project_get_env_value "$PROJECT_NAME" "PROJECT_DB_PASSWORD")"
+  if [ -z "$db_password" ]; then
+    db_password=$(project_create_passphrase 16)
+    project_set_env_file_variable "$env_file" "PROJECT_DB_PASSWORD" "$db_password" "1"
+  fi
+
+  # Set/create a db root password if the variable exists in .env.
+  local db_root_password
+  db_root_password="$(_project_get_env_value "$PROJECT_NAME" "PROJECT_DB_ROOT_PASSWORD")"
+  if [ -z "$db_root_password" ]; then
+    db_root_password=$(project_create_passphrase 16)
+    project_set_env_file_variable "$env_file" "PROJECT_DB_ROOT_PASSWORD" "$db_root_password" "1"
+  fi
+
+  if [ "$project_env" == "dev" ]; then
+    # Add the project path to the docker volumes on dev.
+    project_set_env_file_variable "$env_file" "PROJECT_PROXY_DOCKER_VOLUMES" "$project_path:/srv/\${PROJECT_DOMAIN}" "1"
+  fi
+
+  # The rest of the arguments can set / override .env values.
+  local num_rest_arguments=$#
+  local check_amount=$((num_rest_arguments % 2))
+  if [ -$check_amount -ne 0 ]; then
+    project_show_error "You provided an odd number of additional arguments. Additional arguments must come in pairs of [env_var] and [value]."
+  fi
+
+  local env_var_name
+  local env_var_value
+  for (( i=0; i<num_rest_arguments; i+=2 )); do
+    env_var_name="$1"
+    env_var_value="$2"
+    shift 2
+    project_set_env_file_variable "$env_file" "$env_var_name" "$env_var_value" "1" "1"
+  done
+
   local old_pwd
   old_pwd="$(pwd)"
 
-  cd "$project_path"
+  cd "$project_path" || return 1
   local init_script="$project_path/.project/scripts/_init_project.sh"
   if [ -f "$init_script" ]; then
     _project_run_script "$project_name" "$project_path" "_init_project"
@@ -278,7 +328,7 @@ project_create_from_template() {
 
   project_show_success "Created project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
 
-  cd "$old_pwd"
+  cd "$old_pwd" || return 1
 }
 
 # shellcheck disable=SC2120
@@ -822,6 +872,12 @@ project_set_env_file_variable() {
   fi
 }
 
+project_env_file_has_variable() {
+  local env_file="$1"
+  local variable_name="$2"
+  grep "$variable_name" "$env_file" -q
+}
+
 project_create_borg_backup() {
   local patterns_file="${1:-.project/backup.patterns}"
   local repository="$2"
@@ -1013,5 +1069,67 @@ project_has_script() {
     return 0
   else
     return 1
+  fi
+}
+
+project_get_masked_password() {
+  local password="$1"
+  local show_last_characters=${2:-3}
+  local length=${#password}
+  local hidden_length=$((length - show_last_characters))
+  for (( i=0; i<hidden_length; i++ )); do
+    echo -n "*"
+  done
+  echo "${password:$i:$show_last_characters}"
+}
+
+project_format_url() {
+  local scheme="$1"
+  local user="$2"
+  local password="$3"
+  local host="$4"
+  local port="$5"
+  local path="$6"
+  local output=""
+
+  if [ -n "$scheme" ]; then
+    output+="${scheme}://"
+  fi
+
+  if [ -n "$user" ]; then
+    output+="$user"
+  fi
+
+  if [ -n "$password" ]; then
+    output+=":$password"
+  fi
+
+  if [ -n "$user" ]; then
+    output+="@"
+  fi
+  output+="$host"
+
+  if [ -n "$port" ]; then
+    output+=":$port"
+  fi
+
+  if [ "${path:0:1}" != "/" ]; then
+    output+="/"
+  fi
+
+  if [ -n "$path" ]; then
+    output+="$path"
+  fi
+
+  echo "$output"
+}
+
+project_create_passphrase() {
+  local length=${1:-24}
+  # Try to use openssl and fall back to urandom
+  if type openssl &> /dev/null; then
+    openssl rand -base64 $((length * 3/4)) | tr -d '\n' | tr -d '='
+  else
+    tr -dc '[:alnum:]' < /dev/urandom | head -c $length
   fi
 }
