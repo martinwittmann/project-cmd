@@ -219,6 +219,11 @@ project_create_from_template() {
   shift 3
   # All additional arguments will be treated in pairs as "[env_var_name]" "[env_var_value]"
 
+  # We need to source the global scripts file to make sure these functions are
+  # available for project script files.
+  local global_scripts="${p["_script_path"]}/_global-scripts.sh"
+  source "$global_scripts"
+
   # Make sure the arguments are valid.
   local template_path="${p["_script_path"]}/project-templates/$project_template"
   if [ -z "$project_template" ] || [ ! -d "$template_path" ]; then
@@ -270,7 +275,8 @@ project_create_from_template() {
   project_path="$(realpath "$project_path")"
 
   # Set .env values.
-  local env_file="$project_path/.env"
+  local env_file
+  env_file=$(_project_get_default_env_file "$project_name")
   project_set_env_file_variable "$env_file" "PROJECT_NAME" "$project_name" "1" "1"
 
   local project_env
@@ -280,26 +286,10 @@ project_create_from_template() {
     project_set_env_file_variable "$env_file" "PROJECT_ENV" "$project_env" "1" "1"
   fi
 
-  # Set/create a db password if the variable exists in .env.
-  local db_password
-  db_password="$(_project_get_env_value "$PROJECT_NAME" "PROJECT_DB_PASSWORD")"
-  if [ -z "$db_password" ]; then
-    db_password=$(project_create_passphrase 16)
-    project_set_env_file_variable "$env_file" "PROJECT_DB_PASSWORD" "$db_password" "1"
-  fi
-
-  # Set/create a db root password if the variable exists in .env.
-  local db_root_password
-  db_root_password="$(_project_get_env_value "$PROJECT_NAME" "PROJECT_DB_ROOT_PASSWORD")"
-  if [ -z "$db_root_password" ]; then
-    db_root_password=$(project_create_passphrase 16)
-    project_set_env_file_variable "$env_file" "PROJECT_DB_ROOT_PASSWORD" "$db_root_password" "1"
-  fi
-
-  if [ "$project_env" == "dev" ]; then
-    # Add the project path to the docker volumes on dev.
-    project_set_env_file_variable "$env_file" "PROJECT_PROXY_DOCKER_VOLUMES" "$project_path:/srv/\${PROJECT_DOMAIN}" "1"
-  fi
+  # Note that we're not creating database passwords here, since not every project
+  # will need those.
+  # Instead these need to be created in the project template's _init_project
+  # script.
 
   # The rest of the arguments can set / override .env values.
   local num_rest_arguments=$#
@@ -320,10 +310,16 @@ project_create_from_template() {
   local old_pwd
   old_pwd="$(pwd)"
 
+
   cd "$project_path" || return 1
+  # We need to set up the new project to make the env variables available for the init script.
+  _project_setup_project "$project_name"
   local init_script="$project_path/.project/scripts/_init_project.sh"
   if [ -f "$init_script" ]; then
-    _project_run_script "$project_name" "$project_path" "_init_project"
+    # Note that we source the init script directly. If we execute it via
+    # project_run_script we'd only see the output of the init script after
+    # the whole file finished execution.
+    source "$init_script"
   fi
 
   project_show_success "Created project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
@@ -357,7 +353,7 @@ project_uses_docker() {
 }
 
 # Only call this in a sub-shell since this will overwrite all project variables
-# by calling project_setup_project
+# by calling _project_setup_project
 _project_get_project_status_via_docker_compose() {
   local project_name="${1:-$PROJECT_NAME}"
 
@@ -608,7 +604,8 @@ project_get_template_filename() {
 
 project_render_template() {
   local template_arg="$1"
-  shift
+  local strict="${2:-1}"
+  shift 2
 
   local template_argument_format="[project_name]:[path]/[to]/[template]"
 
@@ -649,7 +646,11 @@ project_render_template() {
 
   (
     cd "$templates_path" || return 1
-    jinja2 --strict "$template_file" "${jinja_arguments[@]}"
+    if [ -n "$strict" ]; then
+      jinja2 --strict "$template_file" "${jinja_arguments[@]}"
+    else
+      jinja2 "$template_file" "${jinja_arguments[@]}"
+    fi
   )
 }
 
@@ -759,6 +760,9 @@ _project_get_env_files() {
   project_path="$(_project_get_project_path_by_name "$project_name")"
   _project_assert_project_exists "$project_name" "$project_path"
 
+  local default_env_file
+  default_env_file=$(_project_get_default_env_file "$project_name")
+  result+=("$default_env_file")
   result+=("$project_path/.env")
 
   if [ -n "$project_tag" ] && [ -f "$project_path/.env.$project_tag" ]; then
@@ -766,6 +770,14 @@ _project_get_env_files() {
   fi
 
   type -t result
+}
+
+_project_get_default_env_file() {
+  local project_name="$1"
+  local project_path
+  project_path="$(_project_get_project_path_by_name "$project_name")"
+  _project_assert_project_exists "$project_name" "$project_path"
+  echo "$project_path/.env"
 }
 
 _project_update_php_env_for_tag() {
@@ -856,18 +868,16 @@ project_set_env_file_variable() {
     project_show_error "Could not find env file \"${TEXT_YELLOW}${env_file}${TEXT_RESET}\"."
   fi
 
-  local current_value
-  current_value=$(_project_get_env_value_from_file "$env_file"  "$variable_name")
-
-  if [ -z "$current_value" ]; then
-    if [ -n "$create_variable" ]; then
-      echo "${variable_name}=\"${value}\"" >> "$env_file"
-    fi
-  else
+  if project_env_file_has_variable "$env_file" "$variable_name"; then
     if [ -z "$overwrite" ]; then
       project_show_warning "The variable \"${TEXT_YELLOW}${variable_name}${TEXT_RESET}\" already exists in file \"${TEXT_YELLOW}${env_file}${TEXT_RESET}\"."
     else
-      sed -i "s/^${variable_name}.*/${variable_name}=\"$value\"/" "$env_file"
+      # Use a different separator than / to allow values with slashes.
+      sed -i "s|^${variable_name}.*|${variable_name}=\"$value\"|" "$env_file"
+    fi
+  else
+    if [ -n "$create_variable" ]; then
+      echo "${variable_name}=\"${value}\"" >> "$env_file"
     fi
   fi
 }
@@ -876,6 +886,14 @@ project_env_file_has_variable() {
   local env_file="$1"
   local variable_name="$2"
   grep "$variable_name" "$env_file" -q
+
+  local variable_in_env_file
+  variable_in_env_file=$("${p["_script_path"]}/lib/shdotenv/shdotenv" -e "$env_file" --grep "$variable_name")
+  if [ -n "$variable_in_env_file" ]; then
+    return 0
+  else
+    return 0
+  fi
 }
 
 project_create_borg_backup() {
@@ -1128,8 +1146,68 @@ project_create_passphrase() {
   local length=${1:-24}
   # Try to use openssl and fall back to urandom
   if type openssl &> /dev/null; then
-    openssl rand -base64 $((length * 3/4)) | tr -d '\n' | tr -d '='
+    # We're creating a longer phrase and cut out unwanted characters.
+    openssl rand -base64 $((length * 3/4)) | tr -d '\n' | tr -d '=' | tr -d '/' | head -c "$length"
   else
     tr -dc '[:alnum:]' < /dev/urandom | head -c $length
   fi
+}
+
+project_get_drupal_core_modules() {
+  local drupal_root="$1"
+  local -n result=$2
+  local base_dir="$drupal_root/core/modules"
+  result=()
+
+  local module_name
+  while IFS= read -r -d '' path; do
+    module_name=$(basename "$path")
+    result["$module_name"]=$(project_get_drupal_module_title "$path")
+  done < <(find "$base_dir" -mindepth 1 -maxdepth 1 -type d -print0 | sort -z)
+}
+
+project_get_drupal_module_title() {
+  local path="$1"
+  local name
+  name=$(basename "$path")
+  local info_file
+  info_file="$path/${name}.info.yml"
+  # \K sets the start of the match.
+  grep -oP "^name:\s\K.*" "$info_file"
+}
+
+project_show_title_box() {
+    local text="$1"
+    local border_color="$2"
+    local text_color="$3"
+
+    local top_left_corner="┌"
+    local top_right_corner="┐"
+    local bottom_left_corner="└"
+    local bottom_right_corner="┘"
+    local horizontal_line="─"
+    local vertical_line="│"
+
+    border_length=${#text}
+    border=""
+
+    for ((i=0; i<=border_length+1; i++)); do
+        border="$border$horizontal_line"
+    done
+
+    echo ""
+    echo -e "${border_color}${top_left_corner}${border}${top_right_corner}${TEXT_RESET}"
+    echo -e "${border_color}${vertical_line} ${text_color}${text}${TEXT_RESET} ${border_color}${vertical_line}${TEXT_RESET}"
+    echo -e "${border_color}${bottom_left_corner}${border}${bottom_right_corner}${TEXT_RESET}"
+}
+
+project_list_contains() {
+  local -n list=$1
+  local value="$2"
+
+  for item in "${list[@]}"; do
+    if [ "$item" == "$value" ]; then
+      echo "1"
+    fi
+  done
 }

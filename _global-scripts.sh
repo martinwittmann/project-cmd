@@ -200,6 +200,7 @@ _project_global_script_import_mysql_dump() {
 _project_global_script_list_mysql_dumps() {
   local dumps_path
   dumps_path="$(realpath "$PROJECT_PATH/.project/dumps")"
+  # Skip the first line of ls which shows totals.
   readarray -t file_names < <(ls -lh "$dumps_path" | tail -n +2 | sort -r | awk '{print $9}')
   readarray -t file_sizes < <(ls -lh "$dumps_path" | tail -n +2 | sort -r | awk '{print $5}')
 
@@ -422,7 +423,7 @@ _project_global_script_create_nginx_config() {
   local access_log_filename="$path_in_proxy/$logs_dir/${project_domain}_access.log"
   local error_log_filename="$path_in_proxy/$logs_dir/${project_domain}_error.log"
 
-  project_render_template "$template"\
+  project_render_template "$template" "1"\
    container_name "$PROJECT_CONTAINER_NAME"\
    container_port "$PROJECT_CONTAINER_PORT"\
    domain "$project_domain"\
@@ -1014,7 +1015,7 @@ _project_global_script_docker_compose_update() {
   # The default implementation uses the most commonly used variables.
   # This can be overriden on a per-project basis by creating a project
   # script with the name "docker_compose_update.sh".See commands/docker.sh.
-  project_render_template "$template"\
+  project_render_template "$template" "1"\
    environment "\${PROJECT_ENV}"\
    project_name "\${PROJECT_NAME}"\
    container_name "\${PROJECT_CONTAINER_NAME}"\
@@ -1029,48 +1030,197 @@ _project_global_script_docker_compose_update() {
   > "$(project_get_docker_compose_path)"
 }
 
-_project_global_script_drupal_install_site_interactively() {
-  project_show_message "Drupal installation:"
-  read -p "Site name: ($PROJECT_NAME)" site_name
-  if [ -z "$site_name" ]; then
-    site_name="$PROJECT_NAME"
-  fi
+_project_global_script_drupal_install_site_interactive() {
+  project_show_title_box "Drupal installation"
 
-  read -p "Installation profile: (standard)" profile
+  local profile="$1"
   if [ -z "$profile" ]; then
-    profile="standard"
+    read -p "Installation profile (standard): " profile
+    if [ -z "$profile" ]; then
+      profile="standard"
+    fi
+  else
+    echo "Installation profile: $profile"
   fi
 
-  read -p "Locale: (de)" locale
+  local site_name="$2"
+  if [ -z "$site_name" ]; then
+    read -p "Site name ($PROJECT_NAME): " site_name
+    if [ -z "$site_name" ]; then
+      site_name="$PROJECT_NAME"
+    fi
+  fi
+
+  local locale="$3"
   if [ -z "$locale" ]; then
-    project_name="de"
+    read -p "Locale (de): " locale
+    if [ -z "$locale" ]; then
+      locale="de"
+    fi
   fi
 
-  read -p "Admin user: (admin)" admin_user
+  local admin_user="$4"
   if [ -z "$admin_user" ]; then
-    admin_user="admin"
+    read -p "Admin user (admin): " admin_user
+    if [ -z "$admin_user" ]; then
+      admin_user="admin"
+    fi
   fi
 
-  read -p "Email address for user $admin_user" admin_email
-  if [ -z "$admin_email" ]; then
-    project_show_error "The email address cannot be empty."
+  local git_email
+  git_email=$(git config user.email)
+  local admin_email="$5"
+  while [ -z "$admin_email" ]; do
+    if [ -n "$git_email" ]; then
+      read -p "Email address for user $admin_user ($git_email): " admin_email
+      if [ -z "$admin_email" ]; then
+        admin_email="$git_email"
+      fi
+    else
+      read -p "Email address for user $admin_user: " admin_email
+    fi
+
+    if [ -z "$admin_email" ]; then
+      project_show_error "The email address cannot be empty."
+      echo ""
+    fi
+  done
+
+  local admin_password="$6"
+  while [ -z "$admin_password" ]; do
+    local admin_password_1
+    # For some reason -s needs to be before -p for read to work as expected.
+    read -rsp "Password for user $admin_user: " admin_password_1
+    echo ""
+    local admin_password_2
+    read -rsp "Please reenter the password: " admin_password_2
+    echo ""
+
+    if [ "$admin_password_1" != "$admin_password_2" ]; then
+      project_show_error "The passwords do not match."
+      echo ""
+      continue
+    fi
+
+    # Both given admin user passwords match so we can set $admin_password
+    # and move on.
+    admin_password="$admin_password_1"
+
+    if [ -z "$admin_password" ]; then
+      project_show_error "The admin password cannot be empty."
+      continue
+    fi
+  done
+
+  local db_url="$7"
+  while [ -z "$db_url" ]; do
+    default_db_url=$(project_format_url "mysql" "$PROJECT_DB_USER" "$PROJECT_DB_PASSWORD" "$PROJECT_DB_HOST" "$PROJECT_DB_PORT" "$PROJECT_DB_NAME")
+    local db_password_masked
+    db_password_masked=$(project_get_masked_password "$PROJECT_DB_PASSWORD")
+
+    echo ""
+    echo -e "The database credentials configured via .env are:"
+    echo -e "${TEXT_GRAY}  Host: $PROJECT_DB_HOST:$PROJECT_DB_PORT"
+    echo -e "  Database: $PROJECT_DB_NAME"
+    echo -e "  User: $PROJECT_DB_USER"
+    echo -e "  Password: $db_password_masked${TEXT_RESET}"
+    read -p "Use the database credentials defined in .env? (Y/n): " use_default_db_url
+
+    case "$use_default_db_url" in
+      [nN][oO])
+        echo "Please enter the database credentials:"
+        read -p "Host (without port): " db_host
+        read -p "Port: " db_port
+        read -p "Database name: " db_name
+        read -p "User: " db_user
+        read -p "Password: " db_password
+        db_url=$(project_format_url "mysql" "$db_user" "$db_password" "$db_host" "$db_port" "$db_name")
+        ;;
+
+      *)
+        db_url="$default_db_url"
+        ;;
+    esac
+  done
+
+  if [ "$profile" == "schwerpunkt" ]; then
+    # Ask which modules to install.
+
+    declare -A default_core_modules_to_install
+    default_core_modules_to_install["action"]="on"
+    default_core_modules_to_install["address"]="on"
+    default_core_modules_to_install["ban"]="on"
+    default_core_modules_to_install["block"]="on"
+    default_core_modules_to_install["block_content"]="on"
+    default_core_modules_to_install["breakpoint"]="on"
+    default_core_modules_to_install["ckeditor5"]="on"
+    default_core_modules_to_install["config"]="on"
+    default_core_modules_to_install["contextual"]="on"
+    default_core_modules_to_install["crop"]="on"
+    default_core_modules_to_install["datetime"]="on"
+    default_core_modules_to_install["dblog"]="on"
+    default_core_modules_to_install["dynamic_page_cache"]="on"
+    default_core_modules_to_install["editor"]="on"
+    default_core_modules_to_install["field"]="on"
+    default_core_modules_to_install["field_ui"]="on"
+    default_core_modules_to_install["file"]="on"
+    default_core_modules_to_install["filter"]="on"
+    default_core_modules_to_install["image"]="on"
+    default_core_modules_to_install["inline_form_errors"]="on"
+    default_core_modules_to_install["language"]="on"
+    default_core_modules_to_install["link"]="on"
+    default_core_modules_to_install["locale"]="on"
+    default_core_modules_to_install["media"]="on"
+    default_core_modules_to_install["media_library"]="on"
+    default_core_modules_to_install["menu_link_content"]="on"
+    default_core_modules_to_install["menu_ui"]="on"
+    default_core_modules_to_install["mysql"]="on"
+    default_core_modules_to_install["node"]="on"
+    default_core_modules_to_install["options"]="on"
+    default_core_modules_to_install["page_cache"]="on"
+    default_core_modules_to_install["path"]="on"
+    default_core_modules_to_install["path_alias"]="on"
+    default_core_modules_to_install["phpass"]="on"
+    default_core_modules_to_install["profile"]="on"
+    default_core_modules_to_install["rest"]="on"
+    default_core_modules_to_install["responsive_image"]="on"
+    default_core_modules_to_install["search"]="on"
+    default_core_modules_to_install["shortcut"]="on"
+    default_core_modules_to_install["system"]="on"
+    default_core_modules_to_install["taxonomy"]="on"
+    default_core_modules_to_install["telephone"]="on"
+    default_core_modules_to_install["text"]="on"
+    default_core_modules_to_install["token"]="on"
+    default_core_modules_to_install["toolbar"]="on"
+    default_core_modules_to_install["user"]="on"
+    default_core_modules_to_install["views_ui"]="on"
+    default_core_modules_to_install["views"]="on"
+
+  	declare -A core_modules=()
+  	project_get_drupal_core_modules "$PROJECT_PATH/web" core_modules
+
+  	declare -a checklist_items=()
+
+  	mapfile -t sorted_keys < <(printf '%s\n' "${!core_modules[@]}" | sort)
+  	for module in "${sorted_keys[@]}"; do
+  	  checklist_items+=("$module" "${core_modules["$module"]}" "${default_core_modules_to_install["$module"]}")
+    done
+
+  	dialog_result=$(dialog --stdout --checklist "Select drupal core modules to install:" 20 600 0 "${checklist_items[@]}")
+  	read -r -a modules_to_install <<< "$dialog_result"
+  	clear
+
+
+  	# Write the modules to the install profile
+    #echo -e "Install the following modules:${TEXT_GRAY}"
+
+    #for module in "${modules_to_install[@]}"; do
+      #echo " - $module"
+    #done
   fi
-
-  read -ps "Password for user $admin_user:" admin_password_1
-  read -ps "Please reenter the password:" admin_password_2
-
-  if [ -z "$admin_password_1" ]; then
-    project_show_error "The admin password cannot be empty."
-  fi
-
-  if [ "$admin_password_1" != "$admin_password_2" ]; then
-    project_show_error "The passwords do not match."
-  fi
-
-  local db_url
-  db_url=$(project_format_url "mysql" "$PROJECT_DB_USER" "$PROJECT_DB_PASSWORD" "$PROJECT_DB_HOST" "$PROJECT_DB_PORT" "$PROJECT_DB_NAME")
 
   echo ""
+  project_show_title_box "Drupal installation"
   echo "Site name: $site_name"
   echo "Installation profile: $profile"
   echo "Locale: $locale"
@@ -1084,12 +1234,14 @@ _project_global_script_drupal_install_site_interactively() {
   project_get_masked_password "$admin_password_1"
   echo "Admin user email: $admin_email"
 
-  read -p "Install drupal site with this information? (y/n): " do_install
+  echo -e "${TEXT_RESET}"
+  read -p "Install drupal site with this information? (Y/n): " do_install
 
   case "$do_install" in
-    [yY][eE][sS]|[yY])
-      _project_global_script_drupal_install_site "$profile" "$site_name" "$locale" "$db_url" "$admin_user" "$admin_password_1" "$admin_email"
+    '')
+      _project_global_script_drupal_install_site "$profile" "$site_name" "$locale" "$db_url" "$admin_user" "$admin_password" "$admin_email"
       ;;
+
     *)
       project_show_warning "Aborted."
       return 1
@@ -1149,5 +1301,31 @@ _project_global_script_drupal_install_site() {
     "--site-name" "$site_name"
     "--db-url" "$db_url"
   )
-  _project_global_script_run_drush site-install "${arguments[@]}"
+  _project_global_script_drush site-install "${arguments[@]}"
+}
+
+_project_global_script_update_drupal_env_values() {
+  declare -a shdotenv_arguments=()
+  local env_file
+  env_file=$(_project_get_default_env_file "$PROJECT_NAME")
+  echo "$env_file"
+
+  shdotenv_arguments+=('--overload')
+  shdotenv_arguments+=('-f')
+  shdotenv_arguments+=('name')
+
+  readarray -t variables < <("${p["_script_path"]}/lib/shdotenv/shdotenv" "${shdotenv_arguments[@]}")
+
+  local arguments=()
+  local value
+  local jinja_name
+  for variable_name in "${variables[@]}"; do
+    value=$(_project_get_env_value "$PROJECT_NAME" "$variable_name")
+    jinja_name=$(echo "$variable_name" | tr '[:upper:]' '[:lower:]')
+    arguments+=("$jinja_name" "$value")
+  done
+
+  project_render_template "$PROJECT_NAME:drupal/settings.php" "" "${arguments[@]}" > "$PROJECT_PATH/web/sites/default/settings.php"
+
+  project_render_template "$PROJECT_NAME:drupal/settings.$PROJECT_ENV.php" "" "${arguments[@]}" > "$PROJECT_PATH/web/sites/default/settings.$PROJECT_ENV.php"
 }

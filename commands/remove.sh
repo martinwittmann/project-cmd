@@ -7,11 +7,15 @@ if [ -z "$project_name_to_remove" ]; then
   return 1
 fi
 
-if ! project_path="$(_project_get_project_path_by_name "$project_name_to_remove")" || [ ! -d "$project_path" ]; then
+if ! project_path="$(_project_get_project_path_by_name "$project_name_to_remove")"; then
   project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" not found."
   return 1
 fi
 
-unset PROJECTS["$project_name_to_remove"]
+if [ ! -d "$project_path" ]; then
+  project_show_warning "Project path \"${TEXT_YELLOW}${project_path}${TEXT_RESET}\" does not exist."
+fi
+
+unset PROJECTS["$project_path"]
 sudo unlink "/etc/project-cmd/projects.d/$project_name_to_remove"
 

@@ -1,0 +1,23 @@
+<?php
+// @codingStandardsIgnoreFile
+global $config;
+$settings['container_yamls'][] = $app_root . '/' . $site_path . '/services.{{ project_env }}.yml';
+
+{% if project_drupal_disable_caches %}
+$settings['cache']['bins']['render'] = 'cache.backend.null';
+$settings['cache']['bins']['page'] = 'cache.backend.null';
+$settings['cache']['bins']['dynamic_page_cache'] = 'cache.backend.null';
+{% endif %}
+
+$settings['vite']['useDevServer'] = TRUE;
+$settings['hot_module_replacement'] = TRUE;
+
+$config['system.performance']['css']['preprocess'] = 0;
+$config['system.performance']['js']['preprocess'] = 0;
+$config['system.logging']['error_level'] = 'verbose';
+
+$config['symfony_mailer.mailer_transport.dsn'] = [
+  'configuration' => [
+    'dsn' => 'smtp://{{ project_smtp_username }}:{{ project_smtp_password }}@{{ project_smtp_host }}:{{ project_smtp_port }}',
+  ],
+];

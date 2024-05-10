@@ -27,10 +27,10 @@ services:
     security_opt:
       - seccomp:unconfined
     environment:
-      MYSQL_ROOT_PASSWORD: {{ db_root_password }}
-      MYSQL_DATABASE: {{ db_name }}
-      MYSQL_USER: {{ db_user }}
-      MYSQL_PASSWORD: {{ db_password }}
+      MARIADB_ROOT_PASSWORD: {{ db_root_password }}
+      MARIADB_DATABASE: {{ db_name }}
+      MARIADB_USER: {{ db_user }}
+      MARIADB_PASSWORD: {{ db_password }}
     restart: unless-stopped
     networks:
       - {{ network_name }}
