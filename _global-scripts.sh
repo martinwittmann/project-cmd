@@ -1013,7 +1013,7 @@ _project_global_script_docker_compose_update() {
   fi
 
   # The default implementation uses the most commonly used variables.
-  # This can be overriden on a per-project basis by creating a project
+  # This can be overridden on a per-project basis by creating a project
   # script with the name "docker_compose_update.sh".See commands/docker.sh.
   project_render_template "$template" "1"\
    environment "\${PROJECT_ENV}"\

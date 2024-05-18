@@ -629,10 +629,11 @@ project_render_template() {
   local jinja_arguments=()
   while [[ $# -gt 0 ]]; do
     local key="$1"
+    local last_key
     local value="$2"
 
     if [ -z "$key" ]; then
-      project_show_error "You need to provide arguments in sets of 2 for key and value. No value given for variable \"${TEXT_YELLOW}${key}${TEXT_RESET}\"."
+      project_show_error "You need to provide arguments in sets of 2 for key and value. No value given for variable \"${TEXT_YELLOW}${key}${TEXT_RESET}\" after \"$last_key\"."
       return 1
     fi
 
@@ -642,6 +643,7 @@ project_render_template() {
     jinja_arguments+=('-D')
     jinja_arguments+=("$key=$value")
     shift 2  # Shift to the next pair
+    last_key="$key"
   done
 
   (
