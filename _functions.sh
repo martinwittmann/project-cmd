@@ -632,7 +632,7 @@ project_render_template() {
     local value="$2"
 
     if [ -z "$key" ]; then
-      project_show_error "You need to provide arguments in sets of 2 for key and value. There is an empty key arguments."
+      project_show_error "You need to provide arguments in sets of 2 for key and value. No value given for variable \"${TEXT_YELLOW}${key}${TEXT_RESET}\"."
       return 1
     fi
 
