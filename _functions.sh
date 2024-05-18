@@ -638,7 +638,12 @@ project_render_template() {
     fi
 
     if [ -z "$value" ]; then
-      project_show_warning "Empty value for key \"${TEXT_YELLOW}${key}${TEXT_RESET}\"."
+      if [ -z "$strict" ]; then
+        project_show_warning "Empty value for key \"${TEXT_YELLOW}${key}${TEXT_RESET}\"."
+      else
+        project_show_error "Empty value for key \"${TEXT_YELLOW}${key}${TEXT_RESET}\"."
+        return 1
+      fi
     fi
     jinja_arguments+=('-D')
     jinja_arguments+=("$key=$value")
