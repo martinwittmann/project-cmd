@@ -604,7 +604,7 @@ project_get_template_filename() {
 
 project_render_template() {
   local template_arg="$1"
-  local strict="${2:-1}"
+  local strict="${2}"
   shift 2
 
   local template_argument_format="[project_name]:[path]/[to]/[template]"

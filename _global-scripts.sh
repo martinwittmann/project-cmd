@@ -425,7 +425,7 @@ _project_global_script_create_nginx_config() {
 
   # We're not showing errors for empty variables since at least for dummy
   # projects there is no container name or container port.
-  project_render_template "$template" "0"\
+  project_render_template "$template" ""\
    container_name "$PROJECT_CONTAINER_NAME"\
    container_port "$PROJECT_CONTAINER_PORT"\
    domain "$project_domain"\

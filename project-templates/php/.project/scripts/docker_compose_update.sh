@@ -1,6 +1,6 @@
 #!/bin/bash
 
-project_render_template "$PROJECT_NAME:docker-compose/$PROJECT_ENV"\
+project_render_template "$PROJECT_NAME:docker-compose/$PROJECT_ENV" ""\
  environment "\${PROJECT_ENV}"\
  container_name "\${PROJECT_CONTAINER_NAME}"\
  container_uid "\${PROJECT_CONTAINER_UID}"\
