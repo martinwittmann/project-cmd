@@ -423,7 +423,9 @@ _project_global_script_create_nginx_config() {
   local access_log_filename="$path_in_proxy/$logs_dir/${project_domain}_access.log"
   local error_log_filename="$path_in_proxy/$logs_dir/${project_domain}_error.log"
 
-  project_render_template "$template" "1"\
+  # We're not showing errors for empty variables since at least for dummy
+  # projects there is no container name or container port.
+  project_render_template "$template" ""\
    container_name "$PROJECT_CONTAINER_NAME"\
    container_port "$PROJECT_CONTAINER_PORT"\
    domain "$project_domain"\
