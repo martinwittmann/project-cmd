@@ -116,13 +116,10 @@ _project_global_script_nginx_error() {
 }
 
 _project_global_script_drush() {
-  local location_prefix=""
-  if [ -n "${p["project_tag"]}" ]; then
-    location_prefix=" -l $PROJECT_URL "
-  fi
+  local docker_arguments=("exec")
 
   if project_uses_docker; then
-    local docker_arguments=("exec")
+    docker_arguments=("exec")
     if [ -n "$SHELL_IS_CRON" ]; then
       docker_arguments+=("-i")
     else
@@ -132,10 +129,17 @@ _project_global_script_drush() {
       docker_arguments+=("-u" "$PROJECT_CONTAINER_UID")
     fi
     docker_arguments+=("-w" "${PROJECT_PATH_IN_CONTAINER}/web" "$PROJECT_CONTAINER_NAME")
-    docker_arguments+=("$PROJECT_PATH_IN_CONTAINER/vendor/bin/drush$location_prefix" "$@")
-    docker "${docker_arguments[@]}"
+    docker_arguments+=("$PROJECT_PATH_IN_CONTAINER/vendor/bin/drush")
+    if [ -n "$PROJECT_TAG" ]; then
+      docker_arguments+=("-l" "$PROJECT_URL")
+    fi
+    docker "${docker_arguments[@]}" "$@"
   else
-    "$PROJECT_PATH/vendor/bin/drush${location_prefix}" "$@"
+    docker_arguments=()
+    if [ -n "$PROJECT_TAG" ]; then
+      docker_arguments+=("-l" "$PROJECT_URL")
+    fi
+    "$PROJECT_PATH/vendor/bin/drush" "$@"
   fi
 }
 
@@ -158,8 +162,8 @@ _project_global_script_mysql_root() {
 _project_global_script_mysql_dump() {
   local backup_path
   backup_path="$(realpath "$PROJECT_PATH/.project/dumps")"
-  if [ -n "${p["project_tag"]}" ]; then
-    backup_path="$backup_path/${p["project_tag"]}"
+  if [ -n "$PROJECT_TAG" ]; then
+    backup_path="$backup_path/$PROJECT_TAG"
     mkdir -p "$backup_path"
   fi
 
@@ -287,12 +291,15 @@ _project_global_script_npm() {
 }
 
 _project_global_script_vite() {
+  local npm_root="${1:-$PROJECT_NPM_ROOT}"
+  local container_name="${PROJECT_CONTAINER_NAME}__"
+  container_name+=$(echo $npm_root | sed -e 's/[^a-zA-Z0-9]/_/g')
   docker run \
     -it \
     --rm \
     --user "$PROJECT_CONTAINER_UID" \
-    --workdir "$PROJECT_PATH_IN_CONTAINER/$PROJECT_NPM_ROOT" \
-    --name "${PROJECT_CONTAINER_NAME}_npm" \
+    --workdir "$PROJECT_PATH_IN_CONTAINER/$npm_root" \
+    --name "$container_name" \
     -p "$PROJECT_VITE_PORT_ON_HOST:$PROJECT_VITE_PORT" \
     --volume "$PROJECT_PATH:$PROJECT_PATH_IN_CONTAINER" \
     node:alpine \
