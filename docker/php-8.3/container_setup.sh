@@ -56,7 +56,7 @@ if [ ${APP_ENV} == "dev" ] || [ ${APP_ENV} == "development" ]; then
   # xdebug 3.3 causes problems at least when running drush. To work around this
   # issue we install the latest version known to be working.
   # TODO Remove version constraint when the bug is fixed.
-  pecl install xdebug-3.2.2 && docker-php-ext-enable xdebug
+  pecl install xdebug && docker-php-ext-enable xdebug
   echo "xdebug.mode=develop,debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
   echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
   echo "xdebug.discover_client_host=0" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini

@@ -8,7 +8,7 @@ ARG APP_ENV
 RUN apt-get update && apt-get install -y git vim curl libcurl4-gnutls-dev libxml2-dev libpng-dev libssl-dev libzip-dev default-mysql-client unzip libc-client-dev libkrb5-dev libjpeg-dev libwebp-dev libfreetype6-dev
 RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl
 RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-freetype
-RUN docker-php-ext-install gd pdo_mysql zip imap bcmath
+RUN docker-php-ext-install gd pdo_mysql zip imap bcmath intl
 
 COPY --from=composer /usr/bin/composer /usr/bin/composer
 
