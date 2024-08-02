@@ -462,7 +462,7 @@ _project_global_script_create_nginx_config_for_project() {
     return 1
   fi
 
-  if ! _project_get_project_path_by_name "$project_name" > /dev/null; then
+  if ! project_path=$(_project_get_project_path_by_name "$project_name"); then
     project_show_error "Project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\" Does not exist."
     return 1
   fi
