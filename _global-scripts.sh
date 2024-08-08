@@ -411,10 +411,16 @@ _project_global_script_create_nginx_config() {
 
   local project_path
   project_path="$(_project_get_project_path_by_name "$project_name")"
+
   # Project domain needs to be retrieved via _project_get_env_value to respect
   # project tags.
   local project_domain
   project_domain="$(_project_get_env_value "$project_name" PROJECT_DOMAIN)"
+
+  # We need to use the project's default domain to determine the project's path
+  # in the proxy container. Using the project-tag-dependent domain would lead
+  # to incorrect paths.
+  local project_default_domain="$PROJECT_DOMAIN"
 
   if [ -z "$project_domain" ]; then
     project_show_error "No project domain set!"
@@ -422,7 +428,7 @@ _project_global_script_create_nginx_config() {
   fi
 
   local path_in_proxy
-  path_in_proxy="$(_project_get_env_value "$project_name" PROJECT_PATH_IN_PROXY_CONTAINER "" "/srv/${project_domain}")"
+  path_in_proxy="$(_project_get_env_value "$project_name" PROJECT_PATH_IN_PROXY_CONTAINER "" "/srv/${project_default_domain}")"
   path_in_container="$(_project_get_env_value "$project_name" PROJECT_PATH_IN_CONTAINER "" "/srv/app")"
   local logs_dir
   logs_dir="$(_project_get_logs_dir "$project_name")"
@@ -436,6 +442,7 @@ _project_global_script_create_nginx_config() {
    container_name "$PROJECT_CONTAINER_NAME"\
    container_port "$PROJECT_CONTAINER_PORT"\
    domain "$project_domain"\
+   default_domain "$project_default_domain"\
    path_in_container "$path_in_container"\
    path_in_proxy_container "$path_in_proxy"\
    access_log_filename "$access_log_filename"\

@@ -686,7 +686,15 @@ _project_update_php_env() {
 _project_get_env_value() {
   local project_name="$1"
   local variable_name="$2"
-  local project_tag="${3:-${p["project_tag"]}}"
+
+  # We need to allow to deliberately give an empty project tag to allow getting
+  # env values that would be overridden by project tags.
+  local project_tag
+  if [ $# -gt 2 ]; then
+    project_tag="${3}"
+  else
+    project_tag="${p["project_tag"]}"
+  fi
   local default_value="$4"
   local debug="$5"
 
@@ -952,7 +960,7 @@ _project_get_borg_backup_repository() {
     backup_target_path="$PROJECT_BACKUP_TARGET_PATH"
   else
     ssh_host=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_HOST)
-    ssh_port=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PORT "" "22")
+    ssh_port=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PORT)
     ssh_user=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_USER)
     ssh_password=$(_project_get_env_value "$project_name" PROJECT_BACKUP_SSH_PASSWORD)
     backup_target_path=$(_project_get_env_value "$project_name" PROJECT_BACKUP_TARGET_PATH)
