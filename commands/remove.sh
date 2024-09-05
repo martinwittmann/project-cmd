@@ -17,5 +17,5 @@ if [ ! -d "$project_path" ]; then
 fi
 
 unset PROJECTS["$project_path"]
-sudo unlink "/etc/project-cmd/projects.d/$project_name_to_remove"
+sudo unlink "${PROJECT_PROJECT_CMD_CONFIG_PATH}/projects.d/$project_name_to_remove"
 

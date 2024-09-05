@@ -20,11 +20,12 @@ _project_setup() {
   p["_status_danger"]="${TEXT_RED}${TEXT_BOLD}[DANGER]${TEXT_RESET}"
   p["_status_debug"]="${TEXT_YELLOW}${TEXT_BOLD}[DEBUG]${TEXT_RESET}"
 
-  # Set up path variables.
-  p["projects_path"]="/etc/project-cmd/projects.d"
-
   # Add our own .env variables.
   source "${p["_script_path"]}/.env"
+
+  # Set up path variables.
+  p["projects_path"]="${PROJECT_PROJECT_CMD_CONFIG_PATH}/projects.d"
+
   source "${p["_script_path"]}/_functions.sh"
 
   # We need to declare it as global.
