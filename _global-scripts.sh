@@ -135,11 +135,11 @@ _project_global_script_drush() {
     fi
     docker "${docker_arguments[@]}" "$@"
   else
-    docker_arguments=()
+    drush_arguments=()
     if [ -n "$PROJECT_TAG" ]; then
-      docker_arguments+=("-l" "$PROJECT_URL")
+      drush_arguments+=("-l" "$PROJECT_URL")
     fi
-    "$PROJECT_PATH/vendor/bin/drush" "$@"
+    "$PROJECT_PATH/vendor/bin/drush" "${drush_arguments[@]}" "$@"
   fi
 }
 
