@@ -205,7 +205,11 @@ project_add_project() {
     return 1
   fi
   local symlink="${p["projects_path"]}/$project_name"
-  sudo ln -s "$project_path" "$symlink"
+
+  if ! ln -s "$project_path" "$symlink"; then
+    project_show_warning "Could not create symlink \"${TEXT_YELLOW}${symlink}${TEXT_RESET}\" for project. Trying with sudo.."
+    sudo ln -s "$project_path" "$symlink"
+  fi
 
   if [ "$quiet" == "0" ]; then
     project_show_success "Added project \"${TEXT_YELLOW}${project_name}${TEXT_RESET}\"."
